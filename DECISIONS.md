@@ -38,7 +38,16 @@ Copy the template, increment the ID, fill it in.
 
 ---
 
-## Agent decisions (YELLOW zone) — append below
+## Standing human rulings — bind every run
+
+### RULING 2026-07-13 — Article II CHECK strengthened to all-whitespace (RED, human-decided)
+- Raised by: T008 agent (correctly halted — SQLite `trim()` strips only spaces, so `'\t'`/`'\n\t'` next_action passed the DB CHECK via raw SQL; app query layer was already safe).
+- Human ruling: amend BOTH CHECKs (opportunities, sales_events) in data-model.md and schema.sql to `length(trim(next_action, ' ' || char(9) || char(10) || char(13))) > 0`. Pre-data, so the one-way door was still open; Article II names the DB layer explicitly — a documented gap was rejected.
+- Verified: '', '  ', '\t', '\n\t', '\r\n' all rejected by CHECK; real Greek text accepted; full suite green.
+
+---
+
+## Archived (run v1) — prior build's decisions; new run logs its own
 
 ### ADR-0006 — recommendation() input shape + branch precedence
 - Date: 2026-07-13
@@ -76,11 +85,6 @@ Copy the template, increment the ID, fill it in.
 - Reversibility: easy — delete the directories; nothing in src/ depends on them.
 - Article-safety: confirmed no Article I–IX violation. These skills ENFORCE Articles III/IV/IX (TDD discipline, fail-open secret detection, evidence-before-claims); the app itself is untouched and still never calls an LLM.
 
-### RULING 2026-07-13 — Article II CHECK strengthened to all-whitespace (RED, human-decided)
-- Raised by: T008 agent (correctly halted — SQLite `trim()` strips only spaces, so `'\t'`/`'\n\t'` next_action passed the DB CHECK via raw SQL; app query layer was already safe).
-- Human ruling: amend BOTH CHECKs (opportunities, sales_events) in data-model.md and schema.sql to `length(trim(next_action, ' ' || char(9) || char(10) || char(13))) > 0`. Pre-data, so the one-way door was still open; Article II names the DB layer explicitly — a documented gap was rejected.
-- Verified: '', '  ', '\t', '\n\t', '\r\n' all rejected by CHECK; real Greek text accepted; full suite green.
-
 ### ADR-0010 — saveIdentity records consent itself; erasure withdraws it
 - Date: 2026-07-13
 - Zone: YELLOW
@@ -89,3 +93,9 @@ Copy the template, increment the ID, fill it in.
 - Alternatives considered: pre-existing consent_flag gate (rejected: consent capture and identity capture happen in the same operator moment — splitting them adds a failure window and double-entry friction, Article I/VII, with no privacy gain); keeping consent_flag = 1 after erasure (rejected: a truthy consent flag with no identity row misstates the GDPR position and would let a later save path skip re-consent).
 - Reversibility: easy — the consent check and flag updates are localized to src/db/identity.ts and pinned by tests/identity.test.ts; switching semantics is a small, test-visible change while the table shape (locked, data-model.md) is untouched.
 - Article-safety: confirmed no Article I–IX violation (IV strengthened: consent is atomic with identity, PII never in errors/logs, analytics proven queryable after erasure; II/V untouched; VIII: node:crypto built-in, no new deps).
+
+---
+
+## Agent decisions (YELLOW zone) — append below
+
+*(empty — the rebuild's agents fill this during execution)*
