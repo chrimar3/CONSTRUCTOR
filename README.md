@@ -2,6 +2,8 @@
 
 Spec-Driven Development file set for the agency's sales-operations prototype. Hand this to an autonomous coding agent (Fable) and it has the full context to build the prototype without hand-holding.
 
+> **Starting a fresh session? Read [`HANDOFF.md`](HANDOFF.md) first** — it's the kickoff brief (read order, execution rules, current state, next action = T001).
+
 ## What's here
 
 ```
