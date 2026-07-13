@@ -48,3 +48,30 @@ export function formatPct(p: number): string {
 export function counterNextAction(suggested: number, pseudonym: string): string {
   return `Αντιπρόταση ${formatEuro(suggested)} στον αγοραστή ${pseudonym}`;
 }
+
+// ─── T013 — the ONE submit predicate for all three capture sheets ────────────
+// Article II at the UI: a blank/whitespace-only next_action can never submit,
+// on any sheet. Per-sheet required fields gate alongside it (lead: source;
+// viewing: buyer + interest; offer: buyer + parseable amount) so the extracted
+// predicate is exactly as strict as the sheets it drives. Pure — no DOM, no
+// I/O — so it is unit-testable headlessly; the sheets both disable the button
+// visually AND guard submit() with it (disabled attribute alone is advisory).
+
+export type SheetSubmitInput =
+  | { kind: "lead"; source: string | null; nextAction: string }
+  | { kind: "viewing"; buyerId: number | null; interest: number | null; nextAction: string }
+  | { kind: "offer"; buyerId: number | null; amount: string; nextAction: string };
+
+export function canSubmit(input: SheetSubmitInput): boolean {
+  // Article II first: JS trim() strips tabs/newlines/CR too (stricter than
+  // SQLite's space-only trim — same all-whitespace bar as the CHECK + guards).
+  if (input.nextAction.trim().length === 0) return false;
+  switch (input.kind) {
+    case "lead":
+      return input.source !== null;
+    case "viewing":
+      return input.buyerId !== null && input.interest !== null;
+    case "offer":
+      return input.buyerId !== null && parseAmount(input.amount) !== null;
+  }
+}

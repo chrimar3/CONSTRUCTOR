@@ -20,7 +20,13 @@ import {
 } from "../domain/labels";
 import { temperature } from "../domain/temperature";
 import { formatEuro } from "../domain/recommend";
-import { counterNextAction, counterPreview, formatPct, parseAmount } from "./helpers";
+import {
+  canSubmit,
+  counterNextAction,
+  counterPreview,
+  formatPct,
+  parseAmount,
+} from "./helpers";
 
 // ─── API result shapes (mirror src/db/queries.ts) ────────────────────────────
 
@@ -492,9 +498,12 @@ function LeadSheet(props: SheetProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = source !== null && nextAction.trim().length > 0;
+  // T013 — Article II at the UI: one shared pure predicate drives both the
+  // visual disable and the hard guard inside submit() (all three sheets).
+  const submittable = canSubmit({ kind: "lead", source, nextAction });
 
   async function submit() {
+    if (!submittable) return; // non-functional while blank, not just greyed out
     setBusy(true);
     setError(null);
     try {
@@ -521,7 +530,7 @@ function LeadSheet(props: SheetProps) {
     <Sheet
       title="Νέος ενδιαφερόμενος"
       submitLabel="Αποθήκευση"
-      canSubmit={canSubmit}
+      canSubmit={submittable}
       busy={busy}
       error={error}
       onSubmit={submit}
@@ -588,9 +597,11 @@ function ViewingSheet(props: SheetProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = buyerId !== null && interest !== null && nextAction.trim().length > 0;
+  // T013 — Article II + brief-pinned: no submit without interest on the viewing sheet.
+  const submittable = canSubmit({ kind: "viewing", buyerId, interest, nextAction });
 
   async function submit() {
+    if (!submittable) return; // non-functional while blank, not just greyed out
     setBusy(true);
     setError(null);
     try {
@@ -615,7 +626,7 @@ function ViewingSheet(props: SheetProps) {
     <Sheet
       title="Καταχώριση επίσκεψης"
       submitLabel="Αποθήκευση"
-      canSubmit={canSubmit}
+      canSubmit={submittable}
       busy={busy}
       error={error}
       onSubmit={submit}
@@ -707,9 +718,11 @@ function OfferSheet(props: SheetProps) {
   const preview = counterPreview(effectiveUnit?.askingCurrent ?? null, amount);
   const parsed = parseAmount(amount);
 
-  const canSubmit = buyerId !== null && parsed !== null && nextAction.trim().length > 0;
+  // T013 — Article II at the UI: shared predicate; amount parseability gates too.
+  const submittable = canSubmit({ kind: "offer", buyerId, amount, nextAction });
 
   async function submit() {
+    if (!submittable) return; // non-functional while blank, not just greyed out
     setBusy(true);
     setError(null);
     try {
@@ -741,7 +754,7 @@ function OfferSheet(props: SheetProps) {
     <Sheet
       title="Καταχώριση προσφοράς"
       submitLabel="Αποθήκευση"
-      canSubmit={canSubmit}
+      canSubmit={submittable}
       busy={busy}
       error={error}
       onSubmit={submit}

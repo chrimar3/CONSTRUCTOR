@@ -27,3 +27,13 @@ bun test
 ```
 
 Expected: all green; `VERIFICATION.md` maps SC-1..SC-6 to evidence.
+
+## CHECKPOINT 1 — manual checklist (phone viewport, T013)
+
+`bun run dev`, open on a phone viewport, pick an operator, then verify per sheet:
+
+- [ ] **Lead / Viewing / Offer**: submit is greyed out on open and stays greyed with next-action empty or whitespace-only (spaces/tab); tapping it does nothing (SC-2, Article II).
+- [ ] Typing any non-blank next-action (or tapping a suggestion chip) enables submit; clearing it back to blank disables it again.
+- [ ] **Viewing**: with buyer + next-action set but no interest tapped, submit stays disabled; tapping an interest score (1–5) enables it.
+- [ ] **Lead** also requires a source; **Offer** also requires buyer + a parseable € amount.
+- [ ] Each capture completes one-handed in <30s and the board updates after save (SC-1).

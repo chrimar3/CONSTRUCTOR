@@ -20,6 +20,7 @@ import { makeServer } from "../src/api/server";
 import { createLead, listPipeline, listProjects, listUnits } from "../src/db/queries";
 import { budgetBandLabel, segmentLabel, sourceChannelLabel } from "../src/domain/labels";
 import {
+  canSubmit,
   counterNextAction,
   counterPreview,
   formatPct,
@@ -248,6 +249,66 @@ describe("T012 helpers: Greek formatting", () => {
     expect(s).toMatch(GREEK);
     expect(s).toContain("288.000 €");
     expect(s).toContain("#5");
+  });
+});
+
+// ─── 4b. T013 — pure canSubmit predicate (Article II at the UI) ──────────────
+// The submit button of every capture sheet is driven by this ONE pure predicate
+// (headlessly testable — no DOM). Article II: empty/whitespace next_action can
+// never submit; per-sheet required fields (source / buyer+interest / buyer+amount)
+// gate alongside it so extracting the predicate never loosens the sheets.
+
+describe("T013 canSubmit: Article II — blank next_action blocks every sheet", () => {
+  test("empty next_action → false on all three sheets even with every other field set", () => {
+    expect(canSubmit({ kind: "lead", source: "spitogatos", nextAction: "" })).toBe(false);
+    expect(canSubmit({ kind: "viewing", buyerId: 1, interest: 4, nextAction: "" })).toBe(false);
+    expect(canSubmit({ kind: "offer", buyerId: 1, amount: "250.000", nextAction: "" })).toBe(false);
+  });
+
+  test("whitespace-only next_action (spaces, tab, newline, CR) → false on all three sheets", () => {
+    for (const blank of ["   ", "\t", "\n", "\r", " \t\n\r "]) {
+      expect(canSubmit({ kind: "lead", source: "spitogatos", nextAction: blank })).toBe(false);
+      expect(canSubmit({ kind: "viewing", buyerId: 1, interest: 4, nextAction: blank })).toBe(false);
+      expect(canSubmit({ kind: "offer", buyerId: 1, amount: "250.000", nextAction: blank })).toBe(false);
+    }
+  });
+
+  test("non-blank next_action (even padded) with all required fields → true on all three sheets", () => {
+    const next = "  Τηλεφώνημα την Τρίτη  "; // trims to non-empty → submittable
+    expect(canSubmit({ kind: "lead", source: "spitogatos", nextAction: next })).toBe(true);
+    expect(canSubmit({ kind: "viewing", buyerId: 1, interest: 4, nextAction: next })).toBe(true);
+    expect(canSubmit({ kind: "offer", buyerId: 1, amount: "250.000", nextAction: next })).toBe(true);
+  });
+});
+
+describe("T013 canSubmit: per-sheet required fields still gate", () => {
+  const next = "Τηλεφώνημα για ραντεβού";
+
+  test("lead: no source → false", () => {
+    expect(canSubmit({ kind: "lead", source: null, nextAction: next })).toBe(false);
+  });
+
+  test("viewing: no interest → false (brief-pinned), no buyer → false", () => {
+    expect(canSubmit({ kind: "viewing", buyerId: 1, interest: null, nextAction: next })).toBe(false);
+    expect(canSubmit({ kind: "viewing", buyerId: null, interest: 4, nextAction: next })).toBe(false);
+  });
+
+  test("offer: unparseable/zero amount → false, no buyer → false", () => {
+    expect(canSubmit({ kind: "offer", buyerId: 1, amount: "", nextAction: next })).toBe(false);
+    expect(canSubmit({ kind: "offer", buyerId: 1, amount: "abc", nextAction: next })).toBe(false);
+    expect(canSubmit({ kind: "offer", buyerId: 1, amount: "0", nextAction: next })).toBe(false);
+    expect(canSubmit({ kind: "offer", buyerId: null, amount: "250.000", nextAction: next })).toBe(false);
+  });
+});
+
+// ─── 4c. T013 — the served bundle is actually wired to the predicate ─────────
+
+describe("T013 client: sheets drive submit through the shared canSubmit predicate", () => {
+  test("the served bundle carries canSubmit (Article II gate ships to the browser)", async () => {
+    const res = await fetch(`${base}/app.js`);
+    expect(res.status).toBe(200);
+    const js = await res.text();
+    expect(js).toContain("canSubmit");
   });
 });
 
