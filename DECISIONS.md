@@ -40,4 +40,11 @@ Copy the template, increment the ID, fill it in.
 
 ## Agent decisions (YELLOW zone) — append below
 
-*(empty — the agent fills this during execution)*
+### ADR-0006 — recommendation() input shape + branch precedence
+- Date: 2026-07-13
+- Zone: YELLOW
+- Context: data-model.md pins the thresholds (viewings ≥ 3 & offers = 0 → price; viewings < 3 → presentation; else hold) but leaves open (a) where the "€X βάσει comps" number comes from, and (b) what happens when viewings < 3 but offers exist (literal rule order would say "presentation" even with offers in hand).
+- Decision: (a) `recommendation({viewings, offers, compsTarget?})` — the comps-based € target is computed by the *report* layer (T016, which owns the comps queries) and passed in; if absent, the price branch still emits a complete Greek recommendation without a number ("επανεξέταση τιμής βάσει comps"). Keeps the domain function pure/DB-free. (b) The presentation branch requires `offers = 0`; any unit with offers falls to "hold", matching the data-model parenthetical "otherwise (has offers / healthy)". Also: € formatting uses manual dot-separators, not `toLocaleString` (no ICU dependence — byte-identical output on any host, Article III).
+- Alternatives considered: computing the comps target inside `recommendation()` (rejected: pulls DB access into a pure domain function, harder to test deterministically); literal rule-order precedence (rejected: recommending "staging refresh" for a unit with 2 live offers reads absurd in a builder-facing report).
+- Reversibility: easy — signature and branch guard are localized; tests pin behavior.
+- Article-safety: confirmed no Article I–IX violation (III strengthened: deterministic formatting; VI strengthened: total function, non-empty for any input).

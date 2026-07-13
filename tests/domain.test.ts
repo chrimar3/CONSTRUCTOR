@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import { temperature } from "../src/domain/temperature";
 import { counter } from "../src/domain/counter";
+import { recommendation } from "../src/domain/recommend";
 
 describe("temperature(interest)", () => {
   test("interest ≥ 4 → hot", () => {
@@ -53,5 +54,49 @@ describe("counter(asking, offer)", () => {
     expect(() => counter(0, 100)).toThrow();
     expect(() => counter(300_000, 0)).toThrow();
     expect(() => counter(300_000, -5)).toThrow();
+  });
+});
+
+describe("recommendation(signals)", () => {
+  test("viewings ≥ 3 & offers = 0 → price-too-high recommendation (pinned threshold)", () => {
+    const r = recommendation({ viewings: 3, offers: 0 });
+    expect(r).toContain("τιμή");
+    expect(r.length).toBeGreaterThan(0);
+  });
+
+  test("price-too-high includes €target when a comps-based target is provided", () => {
+    const r = recommendation({ viewings: 5, offers: 0, compsTarget: 242_500 });
+    expect(r).toContain("242.500");
+    expect(r).toContain("comps");
+  });
+
+  test("viewings < 3 → presentation/channel recommendation", () => {
+    const r = recommendation({ viewings: 0, offers: 0 });
+    expect(r).toMatch(/παρουσίασ|καναλ|staging/i);
+  });
+
+  test("has offers / healthy → hold", () => {
+    const r = recommendation({ viewings: 4, offers: 2 });
+    expect(r).toContain("Διατήρηση");
+  });
+
+  test("Article VI: non-empty Greek string for ANY input — never throws", () => {
+    const weird = [
+      { viewings: -1, offers: -1 },
+      { viewings: NaN, offers: NaN },
+      { viewings: 0, offers: 5 },
+      { viewings: 1000, offers: 0 },
+    ];
+    for (const s of weird) {
+      const r = recommendation(s);
+      expect(typeof r).toBe("string");
+      expect(r.trim().length).toBeGreaterThan(0);
+      expect(r).toMatch(/[Α-Ωα-ωά-ώΆ-Ώ]/); // contains Greek
+    }
+  });
+
+  test("deterministic: same signals ⇒ identical string (Article III)", () => {
+    expect(recommendation({ viewings: 3, offers: 0, compsTarget: 200_000 }))
+      .toBe(recommendation({ viewings: 3, offers: 0, compsTarget: 200_000 }));
   });
 });
