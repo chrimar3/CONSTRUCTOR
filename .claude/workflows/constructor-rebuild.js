@@ -151,7 +151,10 @@ Do NOT fix anything - report only.`
 
 const PHASES = { 0: PHASE0, 1: PHASE1, 2: PHASE2, 3: PHASE3 }
 const PHASE_NAMES = { 0: 'Phase 0 (foundation)', 1: 'Phase 1 (capture + pipeline)', 2: 'Phase 2 (reporting)', 3: 'Phase 3 (verification)' }
-const phaseKey = args && args.phase !== undefined ? Number(args.phase) : NaN
+// args may arrive as an object or a JSON-encoded string depending on invocation path — accept both.
+let A = args
+if (typeof A === 'string') { try { A = JSON.parse(A) } catch { /* fall through to guard */ } }
+const phaseKey = A && A.phase !== undefined ? Number(A.phase) : NaN
 if (!(phaseKey in PHASES)) {
   return { error: 'Pass args {phase: 0|1|2|3}. Run phases in order; get human CHECKPOINT approval between them (REBUILD-RUNBOOK.md).' }
 }
