@@ -35,6 +35,28 @@ pipeline and come to the human — never worked around.
 Never run phase N+1 before checkpoint N is approved. Never let an agent touch
 `specs/` or resolve a RED. Push to origin after each phase, not mid-pipeline.
 
+## Driver rules (Fable best practices — for the session running this loop)
+
+- **State from git, never from memory.** After any interruption or context compaction,
+  re-locate: `git log --oneline | grep -oE '^\S+ T[0-9]+[a-z]?' | head -1` = last done
+  task; `git status --short` must be clean; `bun test` must be green. The runbook + git
+  history are the full state — nothing lives only in conversation.
+- **Capture the run ID** from every Workflow tool result the moment it returns. A halt,
+  kill, or session restart resumes with `resumeFromRunId` — completed tasks replay from
+  cache at zero cost; only the blocked/edited task re-runs.
+- **Don't poll.** The workflow notifies on completion. While it runs, do nothing to the
+  working tree (no edits, no commits — agents own it; concurrent writes race their
+  `git add`). DECISIONS.md, if you must touch it mid-run, append-only (`cat >>`).
+- **Empty or odd workflow result → read `journal.jsonl`** in the run's transcript dir
+  BEFORE diagnosing. Never assume a cached agent result is non-empty.
+- **Evidence before claims — driver included.** A checkpoint package contains only
+  numbers you got from commands run fresh in this session (test counts, audit verdict,
+  commit list). The verification-before-completion skill binds you, not just agents.
+- **Report outcome-first.** Checkpoint messages open with the verdict (PASS/FAIL, counts),
+  then detail. RED halts are relayed verbatim + one recommendation — no option essays.
+- **Do not re-litigate standing rulings** (see DECISIONS.md "Standing human rulings") or
+  locked clarifications; they bind the rebuild.
+
 ## Step 0 — RESET (run these exact commands, review each output)
 
 ```bash
@@ -47,11 +69,12 @@ git rm --quiet .env.example seed.example.json 2>/dev/null || true
 rm -rf node_modules constructor.db
 ```
 
-Then edit `DECISIONS.md`: retitle the section "Agent decisions (YELLOW zone) — append below"
-to "Archived (run v1) — prior build's decisions; new run logs its own", and re-add a fresh
-empty "Agent decisions (YELLOW zone) — append below" section under it. Keep the RULING
-2026-07-13 entry visible — it is a standing human ruling (the strengthened Article II CHECK
-lives in data-model.md and applies to the rebuild).
+Then restructure `DECISIONS.md`: (a) retitle "Agent decisions (YELLOW zone) — append below"
+to "Archived (run v1) — prior build's decisions; new run logs its own"; (b) add a
+"Standing human rulings — bind every run" section directly above it and MOVE the
+RULING 2026-07-13 entry there (the strengthened Article II CHECK lives in data-model.md
+and binds the rebuild); (c) re-add a fresh empty "Agent decisions (YELLOW zone) — append
+below" section at the end.
 
 Commit: `T000: reset task outputs for full agentic rebuild (runbook step 0)`.
 
@@ -81,14 +104,17 @@ workflow script ONLY if the ruling changes its instructions, and re-invoke with
 
 ## Kickoff prompt (paste into a fresh Fable session rooted in this directory)
 
-> Read CLAUDE.md, then REBUILD-RUNBOOK.md, and execute the runbook exactly: perform
-> Step 0 RESET (show me the diff before committing), then drive the phase loop —
-> `Workflow name "constructor-rebuild"` with `args {phase: 0}`, and on completion bring
-> me the audit verdict + checkpoint package and STOP for my approval before phase 1;
-> same for phases 1→2→3. Any RED/blocked halt comes to me verbatim with your
-> recommendation. Push to origin after each approved checkpoint. Do not exceed spec
-> scope; the constitution is binding; use a workflow — this is my standing opt-in for
-> multi-agent orchestration for this rebuild.
+> Read CLAUDE.md, then REBUILD-RUNBOOK.md, and execute the runbook exactly, following
+> its Driver rules. Locate current state from git first (a partial rebuild resumes —
+> never restarts). If Step 0 RESET has not run: perform it, show me the removal diff
+> before committing. Then drive the phase loop: `Workflow name "constructor-rebuild"`
+> with `args {phase: N}` starting at the first incomplete phase; capture the runId;
+> on completion bring me the audit verdict + checkpoint package, outcome first, and
+> STOP for my approval before the next phase. RED/blocked halts come to me verbatim
+> with one recommendation; after my ruling, apply it yourself in the main session and
+> resume with resumeFromRunId. Push to origin only at approved checkpoints. Spec scope
+> is a hard boundary and the constitution is binding. Use a workflow — this is my
+> standing opt-in for multi-agent orchestration for this rebuild.
 
 ## Cost / scale expectations
 
