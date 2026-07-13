@@ -48,3 +48,21 @@ Copy the template, increment the ID, fill it in.
 - Alternatives considered: computing the comps target inside `recommendation()` (rejected: pulls DB access into a pure domain function, harder to test deterministically); literal rule-order precedence (rejected: recommending "staging refresh" for a unit with 2 live offers reads absurd in a builder-facing report).
 - Reversibility: easy — signature and branch guard are localized; tests pin behavior.
 - Article-safety: confirmed no Article I–IX violation (III strengthened: deterministic formatting; VI strengthened: total function, non-empty for any input).
+
+### ADR-0007 — listPipeline needs-attention ordering (deterministic) + live-board filter
+- Date: 2026-07-13
+- Zone: YELLOW
+- Context: spec/US-4 requires the board "sorted so the ones needing attention appear first" but does not define the signals or their precedence; tasks.md flags the choice as the implementer's call, deterministic and documented.
+- Decision: total order = (1) temperature hot→warm→cold, (2) stage furthest along first (Κράτηση > Προσφορά > Επίσκεψη > Lead — an offer on the table outranks a fresh lead at equal temperature), (3) stalest `updated_at` first (longest-untouched needs eyes), (4) `id` ASC as final tiebreak so the order is a strict total order (same input → same output, Article III-adjacent determinism). Also: closed stages (`Συμβόλαιο`, `Fallthrough`) are excluded from the board and from the "live" counter — they are outcomes, not work items.
+- Alternatives considered: pure staleness ordering (rejected: buries a hot fresh offer under old cold leads — the opposite of "needs attention"); a computed urgency score (rejected: opaque to a 3-person team, harder to reason about than a lexicographic sort, Article VIII "boring code").
+- Reversibility: easy — one ORDER BY clause + one WHERE filter in `listPipeline`, pinned by tests that can be re-pinned.
+- Article-safety: confirmed no Article I–IX violation (deterministic SQL, Article III; analytical joins only, Article IV).
+
+### ADR-0008 — Lead capture data shape: new leads start 'warm', log an 'inquiry' event, next_owner defaults to handledBy
+- Date: 2026-07-13
+- Zone: YELLOW
+- Context: `opportunities.temperature` is NOT NULL but data-model only derives temperature from viewing interest (offers → hot); a brand-new lead has no interest rating. Also open: whether `createLead` writes a `sales_events` row, and what `next_owner` is when the operator does not override it.
+- Decision: (a) new leads start `'warm'` — an active inquiry is a real buying signal, stronger than "no signal" but unproven by a viewing; it also sorts fresh leads above stale cold ones on the board. (b) `createLead` appends an `'inquiry'` sales_event (the stored enum exists for exactly this; keeps the funnel Lead→Viewing→Offer fully reconstructable from the append-only log and `v_separation` complete). (c) `next_owner` defaults to `handledBy`, overridable per call — matches T012a's UI rule at the data layer. (d) Buyer pseudonym is `#<id>` with the id allocated explicitly (MAX(id)+1 inside the write transaction) so pseudonym↔id can never diverge.
+- Alternatives considered: default temperature `'cold'` (rejected: ranks a brand-new inquiry below every warm record on the needs-attention board — punishes exactly the record most worth calling back); no inquiry event (rejected: activity/funnel counts would silently under-report lead work and `handled_by` separation would miss lead captures).
+- Reversibility: easy — a default literal, one INSERT, and a fallback expression; all pinned by tests.
+- Article-safety: confirmed no Article I–IX violation (II: event carries mandatory next_action; IV: analytical fields only, PII rejected with a runtime guard; V: untouched).
