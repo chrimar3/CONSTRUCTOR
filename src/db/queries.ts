@@ -94,6 +94,21 @@ export interface LogOfferResult extends LogEventResult {
   counter: CounterSuggestion | null;
 }
 
+export interface UpdateAskingPriceInput {
+  unitId: number;
+  newPrice: number;
+  reason?: string;
+  /** ISO-8601 timestamp override (defaults to now) — keeps tests deterministic. */
+  at?: string;
+}
+
+export interface UpdateAskingPriceResult {
+  unitId: number;
+  oldPrice: number;
+  newPrice: number;
+  changedAt: string;
+}
+
 export interface AdvanceOpportunityInput {
   opportunityId: number;
   stage: Stage;
@@ -397,6 +412,53 @@ export function logOffer(db: Database, input: LogOfferInput): LogOfferResult {
     ...result,
     counter: asking !== null && asking > 0 ? counter(asking, input.amount) : null,
   };
+}
+
+/**
+ * T010a: change a unit's asking price. Updates `units.asking_current` AND appends
+ * exactly one `price_changes` audit row (old/new/reason/changed_at ISO) in ONE
+ * transaction — both or neither, so the live price can never diverge from its
+ * history. `asking_initial` is never touched (it is the realization baseline).
+ * No next_action here by design: this write creates no opportunity/event, so
+ * Article II does not apply (ADR-0019).
+ */
+export function updateAskingPrice(
+  db: Database,
+  input: UpdateAskingPriceInput,
+): UpdateAskingPriceResult {
+  assertNoPiiKeys(input as unknown as Record<string, unknown>);
+  if (!Number.isInteger(input.newPrice) || input.newPrice <= 0) {
+    throw new RangeError(
+      `asking price must be a positive integer €, got ${input.newPrice}`,
+    );
+  }
+  const ts = nowIso(input.at);
+
+  return db.transaction((): UpdateAskingPriceResult => {
+    // Read old price INSIDE the transaction so the logged old_price can never
+    // race a concurrent update on the same connection.
+    const unit = db
+      .query<{ asking: number }, [number]>(
+        "SELECT asking_current AS asking FROM units WHERE id = ?",
+      )
+      .get(input.unitId);
+    if (unit === null) {
+      throw new Error(`unit ${input.unitId} not found`);
+    }
+    const oldPrice = Number(unit.asking);
+
+    db.run("UPDATE units SET asking_current = ? WHERE id = ?", [
+      input.newPrice,
+      input.unitId,
+    ]);
+    db.run(
+      `INSERT INTO price_changes (unit_id, changed_at, old_price, new_price, reason)
+       VALUES (?, ?, ?, ?, ?)`,
+      [input.unitId, ts, oldPrice, input.newPrice, input.reason ?? null],
+    );
+
+    return { unitId: input.unitId, oldPrice, newPrice: input.newPrice, changedAt: ts };
+  })();
 }
 
 /**

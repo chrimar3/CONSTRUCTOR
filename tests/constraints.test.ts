@@ -15,6 +15,7 @@ import {
   listPipeline,
   logOffer,
   logViewing,
+  updateAskingPrice,
 } from "../src/db/queries";
 
 const BLANKS = ["", "   ", "\t", "\n\t", "\r\n", " \t\r\n "];
@@ -594,6 +595,123 @@ describe("activityCounters", () => {
       offers: 0,
       liveOpportunities: 0,
     });
+  });
+});
+
+// ─── T010a · updateAskingPrice — atomic price update + audit log ─────────────
+
+describe("updateAskingPrice (T010a)", () => {
+  function priceChanges(unitId: number) {
+    return db
+      .query("SELECT * FROM price_changes WHERE unit_id = ? ORDER BY id")
+      .all(unitId) as any[];
+  }
+
+  function askingCurrent(unitId: number): number {
+    return db
+      .query<{ p: number }, [number]>("SELECT asking_current AS p FROM units WHERE id = ?")
+      .get(unitId)!.p;
+  }
+
+  test("updates asking_current and appends exactly one price_changes row with correct old/new/reason/changed_at", () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId); // asking_initial = asking_current = 250000
+    const at = "2026-07-13T10:00:00.000Z";
+
+    const r = updateAskingPrice(db, {
+      unitId,
+      newPrice: 240000,
+      reason: "3 επισκέψεις χωρίς προσφορά",
+      at,
+    });
+
+    // Reads see the new price; asking_initial is untouched (realization baseline).
+    const unit = db.query("SELECT * FROM units WHERE id = ?").get(unitId) as any;
+    expect(unit.asking_current).toBe(240000);
+    expect(unit.asking_initial).toBe(250000);
+
+    // Exactly ONE log row, correct old/new/reason, ISO changed_at.
+    const rows = priceChanges(unitId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].old_price).toBe(250000);
+    expect(rows[0].new_price).toBe(240000);
+    expect(rows[0].reason).toBe("3 επισκέψεις χωρίς προσφορά");
+    expect(rows[0].changed_at).toBe(at);
+    expect(rows[0].changed_at).toMatch(ISO_8601);
+
+    expect(r).toEqual({ unitId, oldPrice: 250000, newPrice: 240000, changedAt: at });
+  });
+
+  test("sequential changes chain old→new correctly — one row per call", () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId);
+
+    updateAskingPrice(db, { unitId, newPrice: 240000, reason: "α" });
+    updateAskingPrice(db, { unitId, newPrice: 235000, reason: "β" });
+
+    expect(askingCurrent(unitId)).toBe(235000);
+    const rows = priceChanges(unitId);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].old_price).toBe(250000);
+    expect(rows[0].new_price).toBe(240000);
+    expect(rows[1].old_price).toBe(240000); // chains from the FIRST change, not initial
+    expect(rows[1].new_price).toBe(235000);
+  });
+
+  test("reason is optional — stored NULL, change still fully logged", () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId);
+
+    updateAskingPrice(db, { unitId, newPrice: 245000 });
+
+    const rows = priceChanges(unitId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].reason).toBeNull();
+    expect(askingCurrent(unitId)).toBe(245000);
+  });
+
+  test("atomicity: forced failure on the log insert rolls back the price update — both or neither", () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId);
+    // Force the SECOND statement of the transaction to fail: if the UPDATE were
+    // not in the same transaction, asking_current would keep the new price with
+    // no audit row — exactly the split-brain T010a forbids.
+    db.run(
+      `CREATE TRIGGER force_pc_fail BEFORE INSERT ON price_changes
+       BEGIN SELECT RAISE(ABORT, 'forced test failure'); END`,
+    );
+
+    expect(() => updateAskingPrice(db, { unitId, newPrice: 200000, reason: "x" })).toThrow();
+
+    expect(askingCurrent(unitId)).toBe(250000); // update rolled back
+    expect(priceChanges(unitId)).toHaveLength(0); // and no log row either
+  });
+
+  test("unknown unit throws with nothing written", () => {
+    expect(() => updateAskingPrice(db, { unitId: 999, newPrice: 200000 })).toThrow(/999/);
+    expect(
+      db.query<{ n: number }, []>("SELECT COUNT(*) AS n FROM price_changes").get()!.n,
+    ).toBe(0);
+  });
+
+  test("RangeError on non-positive or non-integer newPrice, nothing written", () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId);
+    for (const bad of [0, -1000, 199999.5, NaN, Infinity]) {
+      expect(() => updateAskingPrice(db, { unitId, newPrice: bad })).toThrow(RangeError);
+    }
+    expect(askingCurrent(unitId)).toBe(250000);
+    expect(priceChanges(unitId)).toHaveLength(0);
+  });
+
+  test("Article IV: PII-shaped input keys are rejected before any write", () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId);
+    expect(() =>
+      updateAskingPrice(db, { unitId, newPrice: 240000, buyerName: "Γιάννης" } as any),
+    ).toThrow(/Article IV/);
+    expect(priceChanges(unitId)).toHaveLength(0);
+    expect(askingCurrent(unitId)).toBe(250000);
   });
 });
 
