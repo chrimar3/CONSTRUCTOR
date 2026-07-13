@@ -1,0 +1,16 @@
+{
+  "name": "constructor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:init": "bun src/db/init.ts",
+    "seed": "bun src/db/seed.ts",
+    "dev": "bun src/api/server.ts",
+    "report": "bun src/report/cli.ts",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

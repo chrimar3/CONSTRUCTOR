@@ -1,0 +1,16 @@
+# Database — never commit (will contain encrypted PII blobs; Article IV)
+constructor.db
+constructor.db-journal
+constructor.db-wal
+constructor.db-shm
+
+# Secrets — encryption key lives in env/secret store, never in git (Article IV)
+.env
+.env.*
+
+# Dependencies & build
+node_modules/
+dist/
+
+# OS
+.DS_Store
