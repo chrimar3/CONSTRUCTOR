@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Constitution gates run on EVERY commit (any model, any session, even bare git).
+# Bypassing with --no-verify is itself blocked by the Claude-level bash guard.
+REPO="$(git rev-parse --show-toplevel)"
+if [ -x "$REPO/scripts/verify-gates.sh" ]; then
+  bash "$REPO/scripts/verify-gates.sh" || {
+    echo ""
+    echo "COMMIT BLOCKED: a constitution gate failed. Fix the cause, never the gate."
+    exit 1
+  }
+fi
+exit 0

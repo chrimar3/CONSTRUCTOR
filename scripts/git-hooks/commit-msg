@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Commit-message discipline: task commits are the project's state machine.
+MSG_FILE="$1"
+MSG="$(cat "$MSG_FILE")"
+STAGED=$(git diff --cached --name-only)
+
+# Task commits (touching src/ or tests/) must carry the TXXX: prefix — the
+# state-location one-liner (git log | grep T\d+) depends on it.
+if echo "$STAGED" | grep -qE '^(src|tests)/'; then
+  if ! head -1 "$MSG_FILE" | grep -qE '^T[0-9]{3}[a-z]?: |^Merge |^Revert '; then
+    echo "COMMIT BLOCKED: commits touching src/ or tests/ must start 'TXXX: ' (state machine depends on it)." >&2
+    exit 1
+  fi
+fi
+
+# Every commit carries the agent trailer.
+if ! grep -q 'Co-Authored-By: Claude' "$MSG_FILE"; then
+  echo "COMMIT BLOCKED: missing 'Co-Authored-By: Claude ...' trailer." >&2
+  exit 1
+fi
+exit 0
