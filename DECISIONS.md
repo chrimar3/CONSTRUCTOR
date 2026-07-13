@@ -75,3 +75,8 @@ Copy the template, increment the ID, fill it in.
 - Alternatives considered: marketplace/plugin auto-install (rejected: unpinned auto-updating instructions = supply-chain risk); spec-to-code-compliance skill (rejected: blockchain-persona misfire; speckit-analyze covers it); larger skill packs (rejected: Article VIII minimal surface — four targeted skills beat 300 generic ones).
 - Reversibility: easy — delete the directories; nothing in src/ depends on them.
 - Article-safety: confirmed no Article I–IX violation. These skills ENFORCE Articles III/IV/IX (TDD discipline, fail-open secret detection, evidence-before-claims); the app itself is untouched and still never calls an LLM.
+
+### RULING 2026-07-13 — Article II CHECK strengthened to all-whitespace (RED, human-decided)
+- Raised by: T008 agent (correctly halted — SQLite `trim()` strips only spaces, so `'\t'`/`'\n\t'` next_action passed the DB CHECK via raw SQL; app query layer was already safe).
+- Human ruling: amend BOTH CHECKs (opportunities, sales_events) in data-model.md and schema.sql to `length(trim(next_action, ' ' || char(9) || char(10) || char(13))) > 0`. Pre-data, so the one-way door was still open; Article II names the DB layer explicitly — a documented gap was rejected.
+- Verified: '', '  ', '\t', '\n\t', '\r\n' all rejected by CHECK; real Greek text accepted; full suite green.

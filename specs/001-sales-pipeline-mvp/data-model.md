@@ -80,7 +80,7 @@ CREATE TABLE opportunities (
   focus_unit_id      INTEGER REFERENCES units(id),  -- current unit of focus; NULL if still "ψάχνει"
   stage              TEXT NOT NULL,            -- INTERNAL stored key: Lead|Επίσκεψη|Προσφορά|Κράτηση|Συμβόλαιο|Fallthrough. Never rendered raw — UI/reports display via the Greek label map in src/domain/labels.ts (T006a), so FR-11 holds even for the English keys (Lead, Fallthrough).
   temperature        TEXT NOT NULL,            -- hot|warm|cold
-  next_action        TEXT NOT NULL CHECK (length(trim(next_action)) > 0),  -- Article II, enforced
+  next_action        TEXT NOT NULL CHECK (length(trim(next_action, ' ' || char(9) || char(10) || char(13))) > 0),  -- Article II, enforced
   next_owner         TEXT NOT NULL,            -- one of: Χρήστος | Λωίδα | Γιολάντα
   updated_at         TEXT NOT NULL,
   UNIQUE(buyer_id, project_id)                 -- GRAIN: one opportunity per buyer per project
@@ -97,7 +97,7 @@ CREATE TABLE sales_events (
   amount             INTEGER,                  -- for offers
   note               TEXT,
   handled_by         TEXT NOT NULL,            -- Χρήστος|Λωίδα|Γιολάντα — Article VI / separation test
-  next_action        TEXT NOT NULL CHECK (length(trim(next_action)) > 0)
+  next_action        TEXT NOT NULL CHECK (length(trim(next_action, ' ' || char(9) || char(10) || char(13))) > 0)
 );
 
 -- MARKETING ASSET (attribution + CAC) — DEFERRED (Phase B): schema stub only, no
