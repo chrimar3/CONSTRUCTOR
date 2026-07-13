@@ -6,6 +6,7 @@
 // logging a viewing/offer with no prior opportunity CREATES it on the spot.
 
 import type { Database } from "bun:sqlite";
+import { counter, type CounterSuggestion } from "../domain/counter";
 import { temperature, type Temperature } from "../domain/temperature";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -82,6 +83,15 @@ export interface LogEventResult {
   temperature: Temperature;
   /** true when the buyer↔project opportunity did not exist and was created on the spot */
   created: boolean;
+}
+
+export interface LogOfferResult extends LogEventResult {
+  /**
+   * T010 — counter() suggestion against the offer's unit (falling back to the
+   * opportunity's focus unit, ADR-0018); null when the offer is at/above asking
+   * or no unit is in play. Locked math: ADR-0003 (0.6 weight, €500 rounding).
+   */
+  counter: CounterSuggestion | null;
 }
 
 export interface AdvanceOpportunityInput {
@@ -345,14 +355,14 @@ export function logViewing(db: Database, input: LogViewingInput): LogEventResult
  * US-3: log an offer. Offers force temperature 'hot' (data-model derived logic);
  * the stage floor is Προσφορά (forward-only).
  */
-export function logOffer(db: Database, input: LogOfferInput): LogEventResult {
+export function logOffer(db: Database, input: LogOfferInput): LogOfferResult {
   assertNoPiiKeys(input as unknown as Record<string, unknown>);
   assertNextAction(input.nextAction);
   if (!Number.isInteger(input.amount) || input.amount <= 0) {
     throw new RangeError(`offer amount must be a positive integer €, got ${input.amount}`);
   }
 
-  return logEvent(db, {
+  const result = logEvent(db, {
     projectId: input.projectId,
     buyerId: input.buyerId,
     eventType: "offer",
@@ -366,6 +376,27 @@ export function logOffer(db: Database, input: LogOfferInput): LogEventResult {
     note: input.note,
     at: input.at,
   });
+
+  // T010 — counter suggestion for the captured offer (ADR-0018). The effective
+  // unit is the offer's own unit, else the opportunity's existing focus unit;
+  // after logEvent, focus_unit_id holds exactly COALESCE(event unit, prior focus),
+  // so one read gives the effective asking_current. A non-positive stored asking
+  // (data-quality issue) yields no suggestion rather than failing a committed
+  // capture — the counter is advisory, the capture is the record.
+  const unit = db
+    .query<{ asking: number }, [number]>(
+      `SELECT u.asking_current AS asking
+       FROM opportunities o
+       JOIN units u ON u.id = o.focus_unit_id
+       WHERE o.id = ?`,
+    )
+    .get(result.opportunityId);
+  const asking = unit === null ? null : Number(unit.asking);
+
+  return {
+    ...result,
+    counter: asking !== null && asking > 0 ? counter(asking, input.amount) : null,
+  };
 }
 
 /**

@@ -48,6 +48,15 @@ function count(table: "buyers" | "opportunities" | "sales_events"): number {
   return db.query<{ n: number }, []>(`SELECT COUNT(*) AS n FROM ${table}`).get()!.n;
 }
 
+function addUnit(projectId: number, asking = 300000): number {
+  db.run(
+    `INSERT INTO units (project_id, unit_code, asking_initial, asking_current)
+     VALUES (?, 'A1', ?, ?)`,
+    [projectId, asking, asking],
+  );
+  return lastId();
+}
+
 function addBuyer(projectId: number): number {
   return createLead(db, {
     projectId,
@@ -235,6 +244,102 @@ describe("POST /offers", () => {
       nextAction: "",
     });
     await expectGreekError(res, 400);
+  });
+
+  // T010 — counter() integration (data-model derived logic; ADR-0003 locked math).
+  test("T010: offer below unit asking → 201 with counter {pctBelow, suggested} (300000/270000 → 288000)", async () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId, 300000);
+    const buyerId = addBuyer(projectId);
+    const res = await post("/offers", {
+      projectId,
+      buyerId,
+      unitId,
+      amount: 270000,
+      handledBy: "Γιολάντα",
+      nextAction: "Μεταφορά προσφοράς στον εργολάβο",
+    });
+    expect(res.status).toBe(201);
+    const r = (await res.json()) as { counter: { pctBelow: number; suggested: number } };
+    expect(r.counter).toEqual({ pctBelow: 0.1, suggested: 288000 });
+  });
+
+  test("T010: offer at/above asking → 201, counter null, capture still persisted", async () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId, 300000);
+    const buyerId = addBuyer(projectId);
+    for (const amount of [300000, 310000]) {
+      const res = await post("/offers", {
+        projectId,
+        buyerId,
+        unitId,
+        amount,
+        handledBy: "Γιολάντα",
+        nextAction: "Ενημέρωση εργολάβου",
+      });
+      expect(res.status).toBe(201);
+      const r = (await res.json()) as { counter: unknown };
+      expect(r.counter).toBeNull();
+    }
+    expect(
+      db.query("SELECT COUNT(*) AS n FROM sales_events WHERE event_type = 'offer'").get(),
+    ).toEqual({ n: 2 });
+  });
+
+  test("T010 / Article II: at-asking offer with blank next_action → 400, nothing written", async () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId, 300000);
+    const buyerId = addBuyer(projectId);
+    const before = count("sales_events");
+    const res = await post("/offers", {
+      projectId,
+      buyerId,
+      unitId,
+      amount: 300000,
+      handledBy: "Γιολάντα",
+      nextAction: "   ",
+    });
+    await expectGreekError(res, 400);
+    expect(count("sales_events")).toBe(before);
+  });
+
+  test("T010: offer without unitId uses the opportunity's focus unit for the counter", async () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId, 300000);
+    const buyerId = addBuyer(projectId);
+    await post("/viewings", {
+      projectId,
+      buyerId,
+      unitId, // sets focus_unit_id on the opportunity
+      interest: 4,
+      handledBy: "Λωίδα",
+      nextAction: "Αναμονή πρότασης",
+    });
+    const res = await post("/offers", {
+      projectId,
+      buyerId, // no unitId on the offer itself
+      amount: 270000,
+      handledBy: "Γιολάντα",
+      nextAction: "Μεταφορά προσφοράς στον εργολάβο",
+    });
+    expect(res.status).toBe(201);
+    const r = (await res.json()) as { counter: { pctBelow: number; suggested: number } };
+    expect(r.counter).toEqual({ pctBelow: 0.1, suggested: 288000 });
+  });
+
+  test("T010: offer with no unit anywhere → 201, counter null", async () => {
+    const projectId = addProject();
+    const buyerId = addBuyer(projectId);
+    const res = await post("/offers", {
+      projectId,
+      buyerId,
+      amount: 270000,
+      handledBy: "Γιολάντα",
+      nextAction: "Αναζήτηση κατάλληλου ακινήτου",
+    });
+    expect(res.status).toBe(201);
+    const r = (await res.json()) as { counter: unknown };
+    expect(r.counter).toBeNull();
   });
 
   test("non-positive / missing amount → 400 Greek JSON", async () => {
