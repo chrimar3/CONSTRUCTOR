@@ -85,19 +85,29 @@ if [ -f src/db/schema.sql ]; then
                  || fail "Article II — expected 2 strengthened CHECKs in schema.sql, found $N (RULING 2026-07-13)"
 fi
 
-# ── Gate 6c (Article II/IV, JP-2/17): every queries.ts write carries guards ─
+# ── Gate 6c (Article II/IV, JP-2/17): opportunity/event writes carry guards ─
+# Article II scopes to captures: functions writing opportunities/sales_events need
+# BOTH guards. Other writes (units/price_changes/comps — no next_action column by
+# data-model design) are exempt; T010a proved the blanket rule over-scoped.
 if [ -f src/db/queries.ts ]; then
   MISSING=$(bun -e '
     const src = await Bun.file("src/db/queries.ts").text();
     const fns = [...src.matchAll(/export function (\w+)\([^)]*\)[^{]*\{([\s\S]*?)\n\}/g)];
-    const writes = fns.filter(([, name, body]) => /INSERT INTO|UPDATE /.test(body));
-    const bad = writes.filter(([, name, body]) =>
+    const captureWrites = fns.filter(([, name, body]) =>
+      /(INSERT INTO|UPDATE )\s*(opportunities|sales_events)/.test(body));
+    if (captureWrites.length === 0) { console.log("__NO_CAPTURE_WRITES__"); process.exit(0); }
+    const bad = captureWrites.filter(([, name, body]) =>
       !/assertNextAction\(/.test(body) || !/assertNoPiiKeys\(/.test(body)
     ).map(([, name]) => name);
     console.log(bad.join(" "));
   ' 2>/dev/null)
-  [ -z "$MISSING" ] && pass "Article II/IV — every write function calls assertNextAction + assertNoPiiKeys" \
-                    || fail "Article II/IV — write fn(s) missing guards: $MISSING"
+  if [ "$MISSING" = "__NO_CAPTURE_WRITES__" ]; then
+    fail "Article II/IV — gate found ZERO opportunity/event writes in queries.ts (vacuous pass guard: the parser is broken or the file was gutted)"
+  elif [ -z "$MISSING" ]; then
+    pass "Article II/IV — every opportunity/event write calls assertNextAction + assertNoPiiKeys"
+  else
+    fail "Article II/IV — capture write fn(s) missing guards: $MISSING"
+  fi
 fi
 
 # ── Gate 6d (scope, JP-16): Phase-B surfaces stay dark ──────────────────────
