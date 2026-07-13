@@ -417,6 +417,134 @@ describe("GET /counters", () => {
   });
 });
 
+// ─── T012a — Operator identity (FR-6 / SC-5, clarification-locked) ──────────
+// handled_by must be one of the three operators (Χρήστος/Λωίδα/Γιολάντα) on every
+// write; next_owner (when supplied) too. Events carry the posted operator and
+// v_separation reflects the distribution.
+
+describe("T012a operator identity (FR-6 / SC-5)", () => {
+  test("FR-6: each capture type stores the posted handled_by on its event", async () => {
+    const projectId = addProject();
+    const leadRes = await post("/leads", { projectId, ...LEAD_BODY }); // Χρήστος
+    const { buyerId } = (await leadRes.json()) as { buyerId: number };
+    await post("/viewings", {
+      projectId,
+      buyerId,
+      interest: 4,
+      handledBy: "Λωίδα",
+      nextAction: "Δεύτερη επίσκεψη",
+    });
+    await post("/offers", {
+      projectId,
+      buyerId,
+      amount: 240000,
+      handledBy: "Γιολάντα",
+      nextAction: "Ενημέρωση εργολάβου",
+    });
+    const rows = db
+      .query("SELECT event_type, handled_by FROM sales_events ORDER BY id")
+      .all();
+    expect(rows).toEqual([
+      { event_type: "inquiry", handled_by: "Χρήστος" },
+      { event_type: "viewing", handled_by: "Λωίδα" },
+      { event_type: "offer", handled_by: "Γιολάντα" },
+    ]);
+  });
+
+  test("invalid operator on any write → 400 Greek JSON, nothing written", async () => {
+    const projectId = addProject();
+    const buyerId = addBuyer(projectId); // 1 buyer + 1 inquiry event (valid arrangement)
+    const eventsBefore = count("sales_events");
+    // exact-match only: unknown names, wrong case, and Latin spellings all rejected
+    for (const handledBy of ["Άγνωστος", "χρήστος", "Christos"]) {
+      const attempts: Array<[string, Record<string, unknown>]> = [
+        ["/leads", { projectId, ...LEAD_BODY, handledBy }],
+        [
+          "/viewings",
+          { projectId, buyerId, interest: 4, handledBy, nextAction: "Δεύτερη επίσκεψη" },
+        ],
+        [
+          "/offers",
+          { projectId, buyerId, amount: 240000, handledBy, nextAction: "Ενημέρωση εργολάβου" },
+        ],
+      ];
+      for (const [path, body] of attempts) {
+        const res = await post(path, body);
+        await expectGreekError(res, 400);
+      }
+    }
+    expect(count("sales_events")).toBe(eventsBefore);
+    expect(count("buyers")).toBe(1);
+  });
+
+  test("invalid nextOwner → 400 Greek JSON (next_owner is one of the three)", async () => {
+    const projectId = addProject();
+    const buyerId = addBuyer(projectId);
+    const res = await post("/leads", { projectId, ...LEAD_BODY, nextOwner: "Κανείς" });
+    await expectGreekError(res, 400);
+    const res2 = await post("/viewings", {
+      projectId,
+      buyerId,
+      interest: 4,
+      handledBy: "Λωίδα",
+      nextOwner: "λωίδα",
+      nextAction: "Δεύτερη επίσκεψη",
+    });
+    await expectGreekError(res2, 400);
+  });
+
+  test("next_owner defaults to handled_by and is overridable to another operator", async () => {
+    const projectId = addProject();
+    const r1 = (await (await post("/leads", { projectId, ...LEAD_BODY })).json()) as {
+      opportunityId: number;
+    };
+    expect(
+      db.query("SELECT next_owner FROM opportunities WHERE id = ?").get(r1.opportunityId),
+    ).toEqual({ next_owner: "Χρήστος" });
+
+    const r2 = (await (
+      await post("/leads", { projectId, ...LEAD_BODY, nextOwner: "Γιολάντα" })
+    ).json()) as { opportunityId: number };
+    expect(
+      db.query("SELECT next_owner FROM opportunities WHERE id = ?").get(r2.opportunityId),
+    ).toEqual({ next_owner: "Γιολάντα" });
+  });
+
+  test("SC-5: v_separation reflects the handled_by distribution", async () => {
+    const projectId = addProject();
+    const buyerId = addBuyer(projectId); // inquiry by Χρήστος
+    await post("/viewings", {
+      projectId,
+      buyerId,
+      interest: 4,
+      handledBy: "Λωίδα",
+      nextAction: "Δεύτερη επίσκεψη",
+    });
+    await post("/offers", {
+      projectId,
+      buyerId,
+      amount: 240000,
+      handledBy: "Λωίδα",
+      nextAction: "Ενημέρωση εργολάβου",
+    });
+    await post("/viewings", {
+      projectId,
+      buyerId,
+      interest: 2,
+      handledBy: "Γιολάντα",
+      nextAction: "Τηλεφώνημα follow-up",
+    });
+    const rows = db
+      .query("SELECT handled_by, events FROM v_separation ORDER BY handled_by")
+      .all();
+    expect(rows).toEqual([
+      { handled_by: "Γιολάντα", events: 1 },
+      { handled_by: "Λωίδα", events: 2 },
+      { handled_by: "Χρήστος", events: 1 },
+    ]);
+  });
+});
+
 // ─── Consistent 400/404 semantics ────────────────────────────────────────────
 
 describe("boundary semantics", () => {

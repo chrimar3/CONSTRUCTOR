@@ -9,7 +9,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Check, ChevronLeft, Euro, Eye, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, Euro, Eye, User, UserPlus } from "lucide-react";
+import { OPERATORS } from "../domain/operators";
 import {
   budgetBandLabel,
   segmentLabel,
@@ -60,7 +61,6 @@ interface Counters {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const OPERATORS = ["Χρήστος", "Λωίδα", "Γιολάντα"];
 const SOURCE_KEYS = ["spitogatos", "xe", "referral", "walkin", "social"];
 const SEGMENT_KEYS = ["first_home", "investor", "upgrader", "foreign"];
 const BUDGET_KEYS = ["<150k", "150-250k", "250-400k", "400k+"];
@@ -77,6 +77,30 @@ const NEXT_ACTION_SUGGESTIONS: Record<"lead" | "viewing" | "offer", string[]> = 
   viewing: ["Δεύτερη επίσκεψη", "Τηλεφώνημα follow-up", "Αποστολή τιμοκαταλόγου"],
   offer: ["Ενημέρωση εργολάβου", "Τηλεφώνημα στον αγοραστή", "Κλείσιμο ραντεβού υπογραφής"],
 };
+
+// ─── T012a — session operator identity (FR-6/SC-5) ────────────────────────────
+// "Ποιος είσαι;" is asked once per browser session (sessionStorage: per-tab,
+// gone on close — locked decision: lightweight identity, no real auth) and is
+// switchable from the header. Every capture auto-stamps handled_by with it.
+
+const OPERATOR_SESSION_KEY = "constructor.operator";
+
+function loadSessionOperator(): string | null {
+  try {
+    const v = sessionStorage.getItem(OPERATOR_SESSION_KEY);
+    return v !== null && (OPERATORS as readonly string[]).includes(v) ? v : null;
+  } catch {
+    return null; // storage unavailable → ask again on load
+  }
+}
+
+function storeSessionOperator(operator: string): void {
+  try {
+    sessionStorage.setItem(OPERATOR_SESSION_KEY, operator);
+  } catch {
+    // non-fatal: the identity still lives in React state for this page load
+  }
+}
 
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 
@@ -361,6 +385,7 @@ function Sheet(props: {
 
 interface SheetProps {
   projectId: number;
+  operator: string; // T012a — session operator: auto-stamped as handled_by
   units: Unit[];
   cards: Card[];
   onSaved: (toast: string) => void;
@@ -385,14 +410,72 @@ function buyerOptions(cards: Card[]): Option[] {
   }));
 }
 
-function OperatorField(props: { value: string | null; onChange: (v: string | null) => void }) {
+/**
+ * T012a — full-screen "Ποιος είσαι;" selector: shown on app open (no session
+ * operator yet) and when switching from the header. Big one-tap targets.
+ */
+function OperatorGate(props: {
+  current: string | null;
+  onPick: (operator: string) => void;
+  onCancel: () => void;
+}) {
   return (
-    <Field label="Χειριστής" required>
+    <div
+      style={{ position: "fixed", inset: 0, background: "#f4f4f5", overflowY: "auto", zIndex: 40 }}
+    >
+      <div style={{ ...S.page, padding: "0 16px 40px" }}>
+        {props.current !== null ? (
+          <div style={{ padding: "14px 0 0" }}>
+            <button
+              type="button"
+              onClick={props.onCancel}
+              aria-label="Πίσω"
+              style={{
+                minWidth: 44,
+                minHeight: 44,
+                border: "none",
+                background: "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <ChevronLeft size={26} />
+            </button>
+          </div>
+        ) : null}
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "48px 0 24px", textAlign: "center" }}>
+          Ποιος είσαι;
+        </h1>
+        <div style={{ display: "grid", gap: 12 }}>
+          {OPERATORS.map((o) => (
+            <button
+              key={o}
+              type="button"
+              onClick={() => props.onPick(o)}
+              style={{ ...S.gridBtn(props.current === o), minHeight: 64, fontSize: 18 }}
+            >
+              {o}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** T012a — next_owner: defaults to the session operator, overridable per capture. */
+function NextOwnerField(props: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="Ανάθεση σε" required>
       <OptionGrid
         columns={3}
         options={OPERATORS.map((o) => ({ key: o, label: o }))}
         value={props.value}
-        onChange={(k) => props.onChange(k as string | null)}
+        onChange={(k) => {
+          if (k !== null) props.onChange(k as string);
+        }}
       />
     </Field>
   );
@@ -403,13 +486,13 @@ function LeadSheet(props: SheetProps) {
   const [segment, setSegment] = useState<string | null>(null);
   const [budget, setBudget] = useState<string | null>(null);
   const [unitId, setUnitId] = useState<number | null>(null);
-  const [operator, setOperator] = useState<string | null>(null);
+  const [nextOwner, setNextOwner] = useState(props.operator);
   const [nextAction, setNextAction] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = source !== null && operator !== null && nextAction.trim().length > 0;
+  const canSubmit = source !== null && nextAction.trim().length > 0;
 
   async function submit() {
     setBusy(true);
@@ -418,7 +501,8 @@ function LeadSheet(props: SheetProps) {
       const body: Record<string, unknown> = {
         projectId: props.projectId,
         sourceChannel: source,
-        handledBy: operator,
+        handledBy: props.operator, // T012a — auto-stamped session operator
+        nextOwner,
         nextAction: nextAction.trim(),
       };
       if (segment !== null) body.segment = segment;
@@ -477,12 +561,12 @@ function LeadSheet(props: SheetProps) {
           />
         </Field>
       ) : null}
-      <OperatorField value={operator} onChange={setOperator} />
       <NextActionField
         value={nextAction}
         onChange={setNextAction}
         suggestions={NEXT_ACTION_SUGGESTIONS.lead}
       />
+      <NextOwnerField value={nextOwner} onChange={setNextOwner} />
       <Field label="Σημείωση (προαιρετική)">
         <input
           style={S.input}
@@ -499,13 +583,12 @@ function ViewingSheet(props: SheetProps) {
   const [buyerId, setBuyerId] = useState<number | null>(null);
   const [unitId, setUnitId] = useState<number | null>(null);
   const [interest, setInterest] = useState<number | null>(null);
-  const [operator, setOperator] = useState<string | null>(null);
+  const [nextOwner, setNextOwner] = useState(props.operator);
   const [nextAction, setNextAction] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit =
-    buyerId !== null && interest !== null && operator !== null && nextAction.trim().length > 0;
+  const canSubmit = buyerId !== null && interest !== null && nextAction.trim().length > 0;
 
   async function submit() {
     setBusy(true);
@@ -515,7 +598,8 @@ function ViewingSheet(props: SheetProps) {
         projectId: props.projectId,
         buyerId,
         interest,
-        handledBy: operator,
+        handledBy: props.operator, // T012a — auto-stamped session operator
+        nextOwner,
         nextAction: nextAction.trim(),
       };
       if (unitId !== null) body.unitId = unitId;
@@ -595,12 +679,12 @@ function ViewingSheet(props: SheetProps) {
           </div>
         ) : null}
       </Field>
-      <OperatorField value={operator} onChange={setOperator} />
       <NextActionField
         value={nextAction}
         onChange={setNextAction}
         suggestions={NEXT_ACTION_SUGGESTIONS.viewing}
       />
+      <NextOwnerField value={nextOwner} onChange={setNextOwner} />
     </Sheet>
   );
 }
@@ -609,7 +693,7 @@ function OfferSheet(props: SheetProps) {
   const [buyerId, setBuyerId] = useState<number | null>(null);
   const [unitId, setUnitId] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
-  const [operator, setOperator] = useState<string | null>(null);
+  const [nextOwner, setNextOwner] = useState(props.operator);
   const [nextAction, setNextAction] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -623,8 +707,7 @@ function OfferSheet(props: SheetProps) {
   const preview = counterPreview(effectiveUnit?.askingCurrent ?? null, amount);
   const parsed = parseAmount(amount);
 
-  const canSubmit =
-    buyerId !== null && parsed !== null && operator !== null && nextAction.trim().length > 0;
+  const canSubmit = buyerId !== null && parsed !== null && nextAction.trim().length > 0;
 
   async function submit() {
     setBusy(true);
@@ -634,7 +717,8 @@ function OfferSheet(props: SheetProps) {
         projectId: props.projectId,
         buyerId,
         amount: parsed,
-        handledBy: operator,
+        handledBy: props.operator, // T012a — auto-stamped session operator
+        nextOwner,
         nextAction: nextAction.trim(),
       };
       if (unitId !== null) body.unitId = unitId;
@@ -739,12 +823,12 @@ function OfferSheet(props: SheetProps) {
           </button>
         </div>
       ) : null}
-      <OperatorField value={operator} onChange={setOperator} />
       <NextActionField
         value={nextAction}
         onChange={setNextAction}
         suggestions={NEXT_ACTION_SUGGESTIONS.offer}
       />
+      <NextOwnerField value={nextOwner} onChange={setNextOwner} />
     </Sheet>
   );
 }
@@ -868,6 +952,9 @@ function CounterStat(props: { label: string; value: number }) {
 type View = "board" | "lead" | "viewing" | "offer";
 
 function App() {
+  // T012a — session operator identity: asked on open, switchable from the header.
+  const [operator, setOperator] = useState<string | null>(loadSessionOperator);
+  const [switchingOperator, setSwitchingOperator] = useState(false);
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectId, setProjectId] = useState<number | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -921,7 +1008,18 @@ function App() {
     }
   }
 
+  function pickOperator(o: string) {
+    storeSessionOperator(o);
+    setOperator(o);
+    setSwitchingOperator(false);
+  }
+
   const project = projects?.find((p) => p.id === projectId) ?? null;
+
+  // T012a — identity comes first: no board or capture without a session operator.
+  if (operator === null) {
+    return <OperatorGate current={null} onPick={pickOperator} onCancel={() => {}} />;
+  }
 
   if (loadError !== null) {
     return (
@@ -950,14 +1048,37 @@ function App() {
   const sheetProps: SheetProps | null =
     projectId === null
       ? null
-      : { projectId, units, cards, onSaved, onClose: () => setView("board") };
+      : { projectId, operator, units, cards, onSaved, onClose: () => setView("board") };
 
   return (
     <div style={{ ...S.page, padding: "0 16px 120px" }}>
-      {/* Header: project selector + per-project counters */}
+      {/* Header: current operator (switchable) + project selector + counters */}
       <div style={{ padding: "14px 0 4px" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7280", letterSpacing: 0.4 }}>
-          CONSTRUCTOR · ΠΩΛΗΣΕΙΣ
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7280", letterSpacing: 0.4 }}>
+            CONSTRUCTOR · ΠΩΛΗΣΕΙΣ
+          </div>
+          <button
+            type="button"
+            onClick={() => setSwitchingOperator(true)}
+            aria-label="Αλλαγή χειριστή"
+            style={{
+              minHeight: 44,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 14px",
+              borderRadius: 22,
+              border: "1.5px solid #d1d5db",
+              background: "#ffffff",
+              color: "#111827",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            <User size={16} /> {operator}
+          </button>
         </div>
         <div
           style={{
@@ -1096,6 +1217,15 @@ function App() {
       {view === "lead" && sheetProps !== null ? <LeadSheet {...sheetProps} /> : null}
       {view === "viewing" && sheetProps !== null ? <ViewingSheet {...sheetProps} /> : null}
       {view === "offer" && sheetProps !== null ? <OfferSheet {...sheetProps} /> : null}
+
+      {/* T012a — switch operator from the header ("Ποιος είσαι;" over everything) */}
+      {switchingOperator ? (
+        <OperatorGate
+          current={operator}
+          onPick={pickOperator}
+          onCancel={() => setSwitchingOperator(false)}
+        />
+      ) : null}
     </div>
   );
 }

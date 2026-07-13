@@ -182,6 +182,25 @@ describe("T012 HTTP: GET /projects and GET /units", () => {
   });
 });
 
+// ─── 3b. T012a — session operator identity ships in the client ──────────────
+// Interactive tap/flow behavior stays CHECKPOINT 1 human verification (T012
+// convention); this pins that the locked UX element — a "Ποιος είσαι;" selector
+// persisted via sessionStorage — is actually part of the served bundle.
+
+describe("T012a client: session operator selector", () => {
+  test("the served bundle carries the Ποιος είσαι; selector and sessionStorage persistence", async () => {
+    const res = await fetch(`${base}/app.js`);
+    expect(res.status).toBe(200);
+    const js = await res.text();
+    expect(js).toContain("Ποιος είσαι;");
+    expect(js).toContain("sessionStorage");
+    // all three operators are selectable in the client
+    for (const name of ["Χρήστος", "Λωίδα", "Γιολάντα"]) {
+      expect(js).toContain(name);
+    }
+  });
+});
+
 // ─── 4. Pure web helpers ─────────────────────────────────────────────────────
 
 describe("T012 helpers: parseAmount", () => {

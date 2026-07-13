@@ -12,6 +12,7 @@ import type { Database } from "bun:sqlite";
 import type { Server } from "bun";
 import { fileURLToPath } from "node:url";
 import { initDb } from "../db/init";
+import { OPERATORS, isOperator } from "../domain/operators";
 import {
   activityCounters,
   createLead,
@@ -41,6 +42,8 @@ const MSG = {
   amountInvalid: "Απαιτείται έγκυρο ποσό προσφοράς (θετικός ακέραιος €)",
   pii: "Προσωπικά στοιχεία δεν γίνονται δεκτά σε αυτό το αίτημα", // Article IV
   projectParam: "Απαιτείται έγκυρη παράμετρος project (ακέραιος)",
+  // T012a — FR-6/SC-5: handled_by/next_owner must be one of the three operators.
+  operator: `Μη έγκυρος χειριστής — επιτρέπονται μόνο: ${OPERATORS.join(", ")}`,
   notFoundRoute: "Η διαδρομή δεν βρέθηκε",
   notFoundEntity: "Δεν βρέθηκε το έργο, ο αγοραστής ή το ακίνητο",
   internal: "Εσωτερικό σφάλμα",
@@ -116,6 +119,18 @@ function optionalString(body: Body, key: string): string | undefined {
   return requireString(body, key);
 }
 
+/** T012a — FR-6: the operator on a write must be one of the three (400 otherwise). */
+function requireOperator(body: Body, key: string): string {
+  const v = requireString(body, key);
+  if (!isOperator(v)) throw new ApiError(400, MSG.operator);
+  return v;
+}
+
+function optionalOperator(body: Body, key: string): string | undefined {
+  if (body[key] === undefined || body[key] === null) return undefined;
+  return requireOperator(body, key);
+}
+
 /** Article II shape check with its own Greek message (queries guard is the backstop). */
 function requireNextAction(body: Body): string {
   const v = body["nextAction"];
@@ -150,9 +165,9 @@ async function handleLead(db: Database, req: Request): Promise<Response> {
   const result = createLead(db, {
     projectId: requireInt(body, "projectId"),
     sourceChannel: requireString(body, "sourceChannel"),
-    handledBy: requireString(body, "handledBy"),
+    handledBy: requireOperator(body, "handledBy"),
     nextAction: requireNextAction(body),
-    nextOwner: optionalString(body, "nextOwner"),
+    nextOwner: optionalOperator(body, "nextOwner"),
     segment: optionalString(body, "segment"),
     budgetBand: optionalString(body, "budgetBand"),
     financing: optionalString(body, "financing"),
@@ -172,10 +187,10 @@ async function handleViewing(db: Database, req: Request): Promise<Response> {
     projectId: requireInt(body, "projectId"),
     buyerId: requireInt(body, "buyerId"),
     interest: requireInt(body, "interest"),
-    handledBy: requireString(body, "handledBy"),
+    handledBy: requireOperator(body, "handledBy"),
     nextAction: requireNextAction(body),
     unitId: optionalInt(body, "unitId"),
-    nextOwner: optionalString(body, "nextOwner"),
+    nextOwner: optionalOperator(body, "nextOwner"),
     note: optionalString(body, "note"),
   };
   // interest range (1..5) is owned by the domain layer — map its RangeError to 400.
@@ -192,10 +207,10 @@ async function handleOffer(db: Database, req: Request): Promise<Response> {
     projectId: requireInt(body, "projectId"),
     buyerId: requireInt(body, "buyerId"),
     amount: requireInt(body, "amount"),
-    handledBy: requireString(body, "handledBy"),
+    handledBy: requireOperator(body, "handledBy"),
     nextAction: requireNextAction(body),
     unitId: optionalInt(body, "unitId"),
-    nextOwner: optionalString(body, "nextOwner"),
+    nextOwner: optionalOperator(body, "nextOwner"),
     note: optionalString(body, "note"),
   };
   // amount positivity is owned by the queries layer — map its RangeError to 400.
