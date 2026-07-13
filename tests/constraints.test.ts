@@ -1,8 +1,11 @@
 // T007 — src/db/queries.ts: typed capture/pipeline queries over bun:sqlite.
+// T008 — Article II negative paths (raw SQL layer + guard layer) and Article IV
+// independence of every analytical query from buyer_identity.
 // Tests are named after the requirement they pin (Article II, Article IV, grain,
 // forward-only stage, deterministic ordering) so failures read as violations.
 
 import { beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import type { Database } from "bun:sqlite";
 import { initDb } from "../src/db/init";
 import {
@@ -14,7 +17,7 @@ import {
   logViewing,
 } from "../src/db/queries";
 
-const BLANKS = ["", "   ", "\t", "\n\t", "\r\n"];
+const BLANKS = ["", "   ", "\t", "\n\t", "\r\n", " \t\r\n "];
 const ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
 let db: Database;
@@ -591,5 +594,154 @@ describe("activityCounters", () => {
       offers: 0,
       liveOpportunities: 0,
     });
+  });
+});
+
+// ─── T008 · Article II — the guard fires BEFORE any DB statement ─────────────
+// Mechanism: a CLOSED database handle. If any write function touched the DB
+// before validating next_action, the closed handle would surface a DB error
+// (not the Article II message). No mocks — real handle, real ordering proof.
+
+describe("Article II guard ordering (T008)", () => {
+  test("control: a valid write on a closed handle fails at the DB, not with the Article II message", () => {
+    const projectId = addProject();
+    const closed = initDb(":memory:");
+    closed.close();
+    let err: unknown;
+    try {
+      createLead(closed, {
+        projectId,
+        sourceChannel: "referral",
+        handledBy: "Χρήστος",
+        nextAction: "Τηλεφώνημα",
+      });
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined(); // the handle is genuinely dead …
+    expect(String(err)).not.toMatch(/next_action/); // … and dies in the DB, not the guard
+  });
+
+  test("createLead/logViewing/logOffer/advanceOpportunity reject blank next_action before any DB statement", () => {
+    const closed = initDb(":memory:");
+    closed.close();
+    for (const blank of BLANKS) {
+      // Each call runs against the CLOSED handle: reaching the DB at all would
+      // raise a closed-database error instead of the Article II message.
+      expect(() =>
+        createLead(closed, {
+          projectId: 1, sourceChannel: "referral",
+          handledBy: "Χρήστος", nextAction: blank,
+        }),
+      ).toThrow(/next_action/);
+      expect(() =>
+        logViewing(closed, {
+          projectId: 1, buyerId: 1, interest: 3,
+          handledBy: "Χρήστος", nextAction: blank,
+        }),
+      ).toThrow(/next_action/);
+      expect(() =>
+        logOffer(closed, {
+          projectId: 1, buyerId: 1, amount: 200000,
+          handledBy: "Χρήστος", nextAction: blank,
+        }),
+      ).toThrow(/next_action/);
+      expect(() =>
+        advanceOpportunity(closed, {
+          opportunityId: 1, stage: "Κράτηση", nextAction: blank,
+        }),
+      ).toThrow(/next_action/);
+    }
+  });
+});
+
+// ─── T008 · Article IV — analytical layer independent of buyer_identity ──────
+
+/**
+ * Extracts the SQL-bearing string literals from a TypeScript source: every
+ * backtick/quoted literal that contains a SQL keyword. Comments are never
+ * captured (they are not string literals), and non-SQL strings (error
+ * messages) are filtered out by the keyword test.
+ */
+function sqlLiteralsIn(source: string): string[] {
+  const literals = [
+    ...source.matchAll(/`[^`]*`/gs),
+    ...source.matchAll(/"[^"\n]*"/g),
+    ...source.matchAll(/'[^'\n]*'/g),
+  ].map((m) => m[0]);
+  return literals.filter((s) => /\b(SELECT|INSERT|UPDATE|DELETE|JOIN|FROM)\b/i.test(s));
+}
+
+describe("Article IV: queries layer never touches buyer_identity (T008)", () => {
+  const QUERIES_PATH = new URL("../src/db/queries.ts", import.meta.url);
+
+  test("no SQL statement in src/db/queries.ts references buyer_identity", () => {
+    const source = readFileSync(QUERIES_PATH, "utf-8");
+    const sql = sqlLiteralsIn(source);
+    // Guard against a vacuous pass: the extractor must actually find the layer's SQL.
+    expect(sql.length).toBeGreaterThanOrEqual(10);
+    for (const statement of sql) {
+      expect(statement).not.toMatch(/buyer_identity/i);
+    }
+  });
+
+  test("v_buyer_pool aggregates ready buyers with buyer_identity EMPTY", () => {
+    const projectId = addProject();
+    lead(projectId, { segment: "first_home", areaPref: "Κυψέλη", budgetBand: "250-400k" });
+    lead(projectId, { segment: "first_home", areaPref: "Κυψέλη", budgetBand: "250-400k" });
+    lead(projectId, { segment: "investor", areaPref: "Κυψέλη", budgetBand: "400k+" });
+
+    // The PII table is genuinely empty — the pool number needs no identity at all.
+    expect(
+      db.query<{ n: number }, []>("SELECT COUNT(*) AS n FROM buyer_identity").get()!.n,
+    ).toBe(0);
+
+    const pool = db
+      .query("SELECT * FROM v_buyer_pool ORDER BY segment")
+      .all() as Array<Record<string, unknown>>;
+    expect(pool).toEqual([
+      { segment: "first_home", area_pref: "Κυψέλη", budget_band: "250-400k", ready_buyers: 2 },
+      { segment: "investor", area_pref: "Κυψέλη", budget_band: "400k+", ready_buyers: 1 },
+    ]);
+  });
+
+  test("listPipeline, activityCounters and v_buyer_pool survive DROP TABLE buyer_identity (right-to-erasure hard case)", () => {
+    const projectId = addProject();
+    const unitId = addUnit(projectId, "B2");
+    const a = lead(projectId, { segment: "first_home", areaPref: "Κυψέλη", budgetBand: "250-400k" });
+    const b = lead(projectId, { segment: "investor", areaPref: "Κυψέλη", budgetBand: "400k+" });
+    logViewing(db, {
+      projectId, buyerId: a.buyerId, unitId, interest: 4,
+      handledBy: "Λωίδα", nextAction: "Πρόταση για προσφορά",
+    });
+    logOffer(db, {
+      projectId, buyerId: a.buyerId, unitId, amount: 240000,
+      handledBy: "Χρήστος", nextAction: "Αντιπρόταση €245.000",
+    });
+
+    db.run("DROP TABLE buyer_identity");
+
+    const rows = listPipeline(db, projectId);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.opportunityId).toBe(a.opportunityId); // hot offer first
+    expect(rows[0]!.pseudonym).toBe(`#${a.buyerId}`);
+    expect(rows[0]!.unitCode).toBe("B2");
+    expect(rows[0]!.offerAmount).toBe(240000);
+    expect(rows[1]!.opportunityId).toBe(b.opportunityId);
+
+    expect(activityCounters(db, projectId)).toEqual({
+      inquiries: 2,
+      viewings: 1,
+      offers: 1,
+      liveOpportunities: 2,
+    });
+
+    const pool = db
+      .query("SELECT * FROM v_buyer_pool ORDER BY segment")
+      .all() as Array<Record<string, unknown>>;
+    expect(pool).toEqual([
+      { segment: "first_home", area_pref: "Κυψέλη", budget_band: "250-400k", ready_buyers: 1 },
+      { segment: "investor", area_pref: "Κυψέλη", budget_band: "400k+", ready_buyers: 1 },
+    ]);
   });
 });
