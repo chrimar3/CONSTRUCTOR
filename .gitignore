@@ -7,6 +7,8 @@ constructor.db-shm
 # Secrets — encryption key lives in env/secret store, never in git (Article IV)
 .env
 .env.*
+# …but the keyless template IS committed (documents CONSTRUCTOR_PII_KEY format)
+!.env.example
 
 # Dependencies & build
 node_modules/
