@@ -1,6 +1,7 @@
 // T004 — derived logic: temperature(interest) per data-model.md
 // "interest >= 4 → hot, =3 → warm, <=2 → cold"; interest is 1..5 integer.
 import { describe, expect, test } from "bun:test";
+import { counter } from "../src/domain/counter";
 import { temperature, type Temperature } from "../src/domain/temperature";
 
 describe("temperature(interest) — data-model derived logic", () => {
@@ -34,5 +35,44 @@ describe("temperature(interest) — data-model derived logic", () => {
     // Compile-time check: assignment fails to typecheck if the export drifts.
     const t: Temperature = temperature(5);
     expect(["hot", "warm", "cold"]).toContain(t);
+  });
+});
+
+// T005 — derived logic: counter(asking, offer) per data-model.md + ADR-0003 locked weight.
+// suggested = round((offer + (asking - offer) * 0.6) / 500) * 500 — deterministic (Article III).
+describe("counter(asking, offer) — data-model derived logic", () => {
+  test("offer at or above asking → null (no counter needed)", () => {
+    expect(counter(300000, 300000)).toBeNull();
+    expect(counter(300000, 310000)).toBeNull();
+  });
+
+  test("pinned vector: (300000, 270000) → pctBelow 0.1, suggested 288000", () => {
+    const result = counter(300000, 270000);
+    expect(result).not.toBeNull();
+    expect(result!.pctBelow).toBe(0.1);
+    expect(result!.suggested).toBe(288000);
+  });
+
+  test("pinned vector: (250000, 231300) → suggested 242500 (rounded to €500)", () => {
+    const result = counter(250000, 231300);
+    expect(result).not.toBeNull();
+    expect(result!.pctBelow).toBe((250000 - 231300) / 250000);
+    expect(result!.suggested).toBe(242500);
+  });
+
+  test("suggested is always a multiple of 500", () => {
+    const result = counter(199999, 180001);
+    expect(result).not.toBeNull();
+    expect(result!.suggested % 500).toBe(0);
+  });
+
+  test("non-positive asking throws RangeError", () => {
+    expect(() => counter(0, 100)).toThrow(RangeError);
+    expect(() => counter(-300000, 270000)).toThrow(RangeError);
+  });
+
+  test("non-positive offer throws RangeError", () => {
+    expect(() => counter(300000, 0)).toThrow(RangeError);
+    expect(() => counter(300000, -270000)).toThrow(RangeError);
   });
 });
