@@ -1,4 +1,4 @@
-# Pipeline — Spec Kit handoff (for autonomous execution)
+# Constructor — Spec Kit handoff (for autonomous execution)
 
 Spec-Driven Development file set for the agency's sales-operations prototype. Hand this to an autonomous coding agent (Fable) and it has the full context to build the prototype without hand-holding.
 
@@ -20,7 +20,7 @@ specs/001-sales-pipeline-mvp/
 
 ### A) Through Spec Kit tooling (recommended)
 ```bash
-uvx --from git+https://github.com/github/spec-kit.git specify init pipeline --integration claude
+uvx --from git+https://github.com/github/spec-kit.git specify init constructor --integration claude
 # copy this .specify/ and specs/ over the initialized project, then:
 # /speckit.analyze     → catch any gaps/violations first
 # /speckit.implement   → agent executes tasks.md

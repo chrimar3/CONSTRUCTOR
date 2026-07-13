@@ -4,7 +4,7 @@ Prerequisites: Bun installed (`curl -fsSL https://bun.sh/install | bash`).
 
 ```bash
 bun install
-bun run db:init                 # create pipeline.db from schema
+bun run db:init                 # create constructor.db from schema
 bun run seed seed.example.json  # Day-0: load an existing pipeline (board is never empty)
 bun run dev                     # start API + web; open the printed localhost URL on a phone viewport
 ```

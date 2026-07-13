@@ -1,4 +1,4 @@
-# Constitution — "Pipeline" Sales Operations System
+# Constitution — "Constructor" Sales Operations System
 
 > Non-negotiable principles. The constitution supersedes all other practices. Any deviation requires explicit documented justification in the plan's Complexity Tracking section. All generated code, specs, and tasks MUST validate against these articles.
 

@@ -1,6 +1,6 @@
 # Data Model — 001 · Sales Pipeline MVP
 
-Storage: `bun:sqlite` (single file `pipeline.db`). No ORM (Article VIII). Constitution invariants enforced at the schema level where possible.
+Storage: `bun:sqlite` (single file `constructor.db`). No ORM (Article VIII). Constitution invariants enforced at the schema level where possible.
 
 ## Entities & schema
 

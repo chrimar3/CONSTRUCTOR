@@ -6,9 +6,9 @@ Execution rules (from constitution): test-first (write failing test → implemen
 
 ## Phase 0 — Foundation
 
-- **T001** Init repo: `package.json` with Bun scripts (`db:init`, `seed`, `dev`, `report`, `test`), tsconfig, `.gitignore` (ignore `pipeline.db`). Commit.
+- **T001** Init repo: `package.json` with Bun scripts (`db:init`, `seed`, `dev`, `report`, `test`), tsconfig, `.gitignore` (ignore `constructor.db`). Commit.
 - **T002** Add `src/db/schema.sql` verbatim from data-model.md (all tables, CHECK constraints, indexes, views). Commit.
-- **T003** `src/db/init.ts`: opens `pipeline.db` via `bun:sqlite`, applies `schema.sql`, `PRAGMA foreign_keys=ON`. Test: DB file created, tables exist. Commit.
+- **T003** `src/db/init.ts`: opens `constructor.db` via `bun:sqlite`, applies `schema.sql`, `PRAGMA foreign_keys=ON`. Test: DB file created, tables exist. Commit.
 - **T004 [P]** Test-first `src/domain/temperature.ts`: `temperature(interest)` → hot/warm/cold per data-model. `tests/domain.test.ts`. Commit.
 - **T005 [P]** Test-first `src/domain/counter.ts`: `counter(asking, offer)` returns null if offer≥asking else `{pctBelow, suggested}` (weighted, rounded €500). Commit.
 - **T006 [P]** Test-first `src/domain/recommend.ts`: `recommendation({viewings, offers, ...})` → Greek recommendation string; guarantees non-empty for any input (Article VI). Commit.
