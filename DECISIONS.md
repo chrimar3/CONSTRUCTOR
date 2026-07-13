@@ -115,3 +115,7 @@ Copy the template, increment the ID, fill it in.
 - Alternatives considered: returning the raw key or an "Άγνωστο" placeholder on unknown keys (rejected: silent English/placeholder leak to a client-facing report is the exact FR-11 failure mode; loud failure in tests is the point); neuter temperature forms "Θερμό/Χλιαρό/Ψυχρό" (rejected: labels qualify the buyer/opportunity, masculine reads naturally on the board); hardcoding the enum lists in the test (rejected: task requires schema-drift auto-detection).
 - Reversibility: easy — pure display strings in one map file; changing wording is a one-line edit pinned by tests that only assert non-empty Greek, not exact copy.
 - Article-safety: confirmed no Article I–IX violation (FR-11 strengthened: no raw-key render path; III untouched — static maps, no locale APIs; VIII: zero deps).
+
+### CHECKPOINT-0 REVIEW 2026-07-13 — ADR-0011 & ADR-0012 human-approved
+- ADR-0011 (recommendation() totality: report path never throws, garbage signals → no-data action branch; capture path throws) — CONFIRMED as decided.
+- ADR-0012 (Greek display wording) — CONFIRMED: keep v2 wording (Lead → "Νέος ενδιαφερόμενος", Fallthrough → "Απώλεια", temperatures Θερμός/Χλιαρός/Ψυχρός). v1 wording explicitly rejected. Binds T012 (web UI) and T014/T016 (reports): render these labels via labels.ts, do not re-open the wording.
