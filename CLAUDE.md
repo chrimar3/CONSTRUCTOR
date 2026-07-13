@@ -39,6 +39,21 @@ human review. Nothing beyond `specs/001-sales-pipeline-mvp/spec.md` scope — ex
 Do NOT batch tasks, do NOT skip RED because the impl is "obvious", do NOT blow through a
 checkpoint. An unlogged YELLOW decision is a process violation.
 
+## Installed skills (audited, project-local — read at the matching loop step)
+
+Provenance + audit record: `.claude/skills/THIRD-PARTY-SKILLS.md` (ADR-0009). Use them:
+
+- **Loop step 1–2 (RED/GREEN)** → `.claude/skills/test-driven-development/SKILL.md` — the
+  watch-it-fail discipline; `testing-anti-patterns.md` before adding any mock or test helper.
+- **Any red suite / bug / unexpected behavior** → `.claude/skills/systematic-debugging/SKILL.md`
+  — root cause BEFORE any fix; no symptom patches.
+- **Loop step 5 (VERIFY) + before any "done"/checkpoint claim** →
+  `.claude/skills/verification-before-completion/SKILL.md` — no completion claims without
+  fresh command output as evidence.
+- **Anything touching env vars, secrets, or the PII crypto path (T008a and after)** →
+  `.claude/skills/insecure-defaults/SKILL.md` — fail-open defaults (`env.X || 'fallback'`)
+  are the exact Article IV failure mode; the key must fail-secure (crash, never default).
+
 ## Verification gates (all must pass before any commit)
 
 ```bash

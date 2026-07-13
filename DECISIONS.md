@@ -66,3 +66,12 @@ Copy the template, increment the ID, fill it in.
 - Alternatives considered: default temperature `'cold'` (rejected: ranks a brand-new inquiry below every warm record on the needs-attention board — punishes exactly the record most worth calling back); no inquiry event (rejected: activity/funnel counts would silently under-report lead work and `handled_by` separation would miss lead captures).
 - Reversibility: easy — a default literal, one INSERT, and a fallback expression; all pinned by tests.
 - Article-safety: confirmed no Article I–IX violation (II: event carries mandatory next_action; IV: analytical fields only, PII rejected with a runtime guard; V: untouched).
+
+### ADR-0009 — Install four audited third-party skills into .claude/skills/
+- Date: 2026-07-13
+- Zone: YELLOW
+- Context: Operator asked for the best-available skills to be researched and installed so agents execute with proper methodology. Third-party skill files are agent-facing instructions — a supply-chain surface for a project that will hold encrypted PII.
+- Decision: Installed project-local, commit-pinned copies of test-driven-development, systematic-debugging, verification-before-completion (obra/superpowers d884ae0, MIT, 253k★) and insecure-defaults (trailofbits/skills cfe5d7b, CC BY-SA 4.0, professional audit firm). Every file was read and pattern-scanned before install (no network calls, no exfil, methodology only). Provenance + audit record in .claude/skills/THIRD-PARTY-SKILLS.md. CLAUDE.md loop updated to invoke them at the right step.
+- Alternatives considered: marketplace/plugin auto-install (rejected: unpinned auto-updating instructions = supply-chain risk); spec-to-code-compliance skill (rejected: blockchain-persona misfire; speckit-analyze covers it); larger skill packs (rejected: Article VIII minimal surface — four targeted skills beat 300 generic ones).
+- Reversibility: easy — delete the directories; nothing in src/ depends on them.
+- Article-safety: confirmed no Article I–IX violation. These skills ENFORCE Articles III/IV/IX (TDD discipline, fail-open secret detection, evidence-before-claims); the app itself is untouched and still never calls an LLM.
