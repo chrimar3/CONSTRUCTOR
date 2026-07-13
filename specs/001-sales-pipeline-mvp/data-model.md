@@ -38,6 +38,7 @@ CREATE TABLE units (
   status             TEXT NOT NULL DEFAULT 'live'  -- live|reserved|sold|withdrawn
 );
 
+-- Written by the price-update path (updateAskingPrice → append here atomically, T010a).
 CREATE TABLE price_changes (
   id INTEGER PRIMARY KEY,
   unit_id            INTEGER NOT NULL REFERENCES units(id),
@@ -77,7 +78,7 @@ CREATE TABLE opportunities (
   project_id         INTEGER NOT NULL REFERENCES projects(id),
   buyer_id           INTEGER NOT NULL REFERENCES buyers(id),
   focus_unit_id      INTEGER REFERENCES units(id),  -- current unit of focus; NULL if still "ψάχνει"
-  stage              TEXT NOT NULL,            -- Lead|Επίσκεψη|Προσφορά|Κράτηση|Συμβόλαιο|Fallthrough
+  stage              TEXT NOT NULL,            -- INTERNAL stored key: Lead|Επίσκεψη|Προσφορά|Κράτηση|Συμβόλαιο|Fallthrough. Never rendered raw — UI/reports display via the Greek label map in src/domain/labels.ts (T006a), so FR-11 holds even for the English keys (Lead, Fallthrough).
   temperature        TEXT NOT NULL,            -- hot|warm|cold
   next_action        TEXT NOT NULL CHECK (length(trim(next_action)) > 0),  -- Article II, enforced
   next_owner         TEXT NOT NULL,            -- one of: Χρήστος | Λωίδα | Γιολάντα
@@ -90,7 +91,7 @@ CREATE TABLE sales_events (
   id INTEGER PRIMARY KEY,
   opportunity_id     INTEGER NOT NULL REFERENCES opportunities(id),
   unit_id            INTEGER REFERENCES units(id),  -- the specific unit this viewing/offer was on
-  event_type         TEXT NOT NULL,            -- inquiry|viewing|offer|reservation|contract|fallthrough
+  event_type         TEXT NOT NULL,            -- INTERNAL stored key: inquiry|viewing|offer|reservation|contract|fallthrough (Greek display via src/domain/labels.ts). reservation|contract are DEFERRED (Phase B) — no capture path in the prototype.
   event_date         TEXT NOT NULL,
   interest           INTEGER,                  -- 1..5 for viewings
   amount             INTEGER,                  -- for offers
@@ -99,7 +100,8 @@ CREATE TABLE sales_events (
   next_action        TEXT NOT NULL CHECK (length(trim(next_action)) > 0)
 );
 
--- MARKETING ASSET (attribution + CAC)
+-- MARKETING ASSET (attribution + CAC) — DEFERRED (Phase B): schema stub only, no
+-- capture path/task in the prototype. Kept so migrations don't reshape it later.
 CREATE TABLE marketing_assets (
   id INTEGER PRIMARY KEY,
   project_id         INTEGER REFERENCES projects(id),
@@ -133,7 +135,9 @@ CREATE INDEX idx_comps_area ON comps(micro_area);
 ## Derived metric views (deterministic — Article III)
 
 ```sql
--- Reservation velocity (leading indicator)
+-- Reservation velocity (leading indicator) — DEFERRED (Phase B): the prototype captures
+-- Lead/Viewing/Offer only, so no 'reservation' events exist yet and this view stays empty.
+-- Monthly absorption forecast uses offer/viewing signals, not reservation velocity, for now.
 CREATE VIEW v_velocity AS
 SELECT o.project_id,
        AVG(julianday(res.event_date) - julianday(o.updated_at)) AS avg_days_to_reservation
@@ -162,4 +166,4 @@ FROM sales_events GROUP BY handled_by;
 
 - **temperature(interest)**: `interest >= 4 → hot`, `=3 → warm`, `<=2 → cold`. Offers → hot.
 - **counter(asking, offer)**: only if `offer < asking`. `pct_below = (asking-offer)/asking`; `suggested = round((offer + (asking-offer)*0.6) / 500) * 500` (weighted toward asking, rounded to €500).
-- **recommendation(unit)** for reports: many viewings & 0 offers → "τιμή ψηλά, προτεινόμενη προσαρμογή €X (βάσει comps)"; few viewings → "presentation/channel — staging refresh ή αλλαγή καναλιού"; healthy → "hold".
+- **recommendation(unit)** for reports (deterministic thresholds, Article III/IX): `viewings ≥ 3 & offers = 0` → "τιμή ψηλά, προτεινόμενη προσαρμογή €X (βάσει comps)"; `viewings < 3` → "presentation/channel — staging refresh ή αλλαγή καναλιού"; otherwise (has offers / healthy) → "hold". The `≥ 3` threshold is a pinned constant so the T006 test is deterministic.

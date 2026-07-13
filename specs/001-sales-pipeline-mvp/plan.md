@@ -45,7 +45,8 @@ constructor/
 │   ├── domain/
 │   │   ├── temperature.ts           # temperature(interest)
 │   │   ├── counter.ts               # counter(asking, offer)
-│   │   └── recommend.ts             # recommendation(unit signals)
+│   │   ├── recommend.ts             # recommendation(unit signals)
+│   │   └── labels.ts                # stored enum key → Greek display label (FR-11)
 │   ├── api/
 │   │   └── server.ts                # Bun.serve: /leads /viewings /offers /pipeline
 │   ├── report/
@@ -89,3 +90,7 @@ bun run report --builder="<name>" --project="<project_name>" --period=biweekly|m
 - ilist sync (read feed / write-back) — seam only.
 - Auth — simple team login placeholder; real auth later.
 - Hosting/EU residency infra — local prototype now; document target (EU region) for production.
+
+## Deferred to Phase B (schema present, no prototype capture path)
+- **Reservation/Contract capture + reservation-velocity** (`v_velocity`, stages Κράτηση/Συμβόλαιο/Fallthrough). The prototype captures Lead/Viewing/Offer only (spec scope), so `avg_days_to_reservation` stays empty; the monthly absorption forecast uses offer/viewing signals for now. Schema/stages are kept so history doesn't need reshaping later.
+- **Marketing assets / CAC** (`marketing_assets`). Schema stub only — no FR, user story, or task in the prototype.

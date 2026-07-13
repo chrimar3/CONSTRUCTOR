@@ -48,7 +48,7 @@ Given the agency has an existing live pipeline, when an operator runs a seed/mig
 
 ## Functional Requirements
 
-- **FR-1** System MUST support capturing Lead, Viewing, Offer events, each creating or advancing a single buyer↔unit opportunity.
+- **FR-1** System MUST support capturing Lead, Viewing, Offer events, each creating or advancing a single **buyer↔project** opportunity (grain locked: `UNIQUE(buyer_id, project_id)`; the current unit is `focus_unit_id`, and each viewing/offer is logged against a specific `unit_id` on the event).
 - **FR-2** System MUST reject any capture whose `next_action` is empty (UI-disabled submit AND storage-level rejection).
 - **FR-3** System MUST derive temperature deterministically from the latest interest rating; offers set temperature hot.
 - **FR-4** System MUST compute, for an offer below asking, the percentage below asking and a suggested counter, using deterministic math only.
