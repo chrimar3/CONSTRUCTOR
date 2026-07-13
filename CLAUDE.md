@@ -1,62 +1,99 @@
 # CLAUDE.md — Constructor (sales-operations prototype)
 
-Spec Kit project. Real-estate agency acting as the outsourced sales department for
-construction firms. **Everything binding lives in the spec documents — this file only
-tells you where they are and how to execute. When in doubt, the constitution wins.**
+Spec Kit project: a real-estate agency acting as the **outsourced sales department** for
+construction firms. **Everything binding lives in the spec documents — this file tells you
+the goal, the loop, and the gates. When in doubt, the constitution wins.**
 
-> NOTE: This project OVERRIDES the global `~/CLAUDE.md` (React/Jest/ESLint web-app
-> config). That config does NOT apply here. Stack is Bun-native, tests run with
-> `bun test`, no Prettier/ESLint pipeline, no ORM, no CSS framework.
+> OVERRIDES the global `~/CLAUDE.md` (React/Jest/ESLint config — does NOT apply here).
+> Stack is Bun-native: `bun test`, `bun:sqlite`, `Bun.serve`. No ORM, no Jest, no CSS framework.
 
-## Read order (fresh session — do not skip)
+## GOAL (Phase A — definition of done)
 
-1. `.specify/memory/constitution.md` — **BINDING. 10 Articles.** If a task would violate one, STOP and ask. Never work around it.
-2. `specs/001-sales-pipeline-mvp/spec.md` — WHAT & WHY (FR-1..14, SC-1..6, `[locked]` clarifications).
-3. `specs/001-sales-pipeline-mvp/plan.md` — HOW (architecture, phases, Constitution Check).
-4. `specs/001-sales-pipeline-mvp/data-model.md` — SQLite schema, constraints, deterministic views + derived logic.
-5. `specs/001-sales-pipeline-mvp/tasks.md` — ordered tasks T001…T020 (+ T006a, T010a, T011a, T012a) with CHECKPOINTS.
-6. `HANDOFF.md` — session kickoff brief; `DECISIONS.md` — ADR log (inherited locked decisions + agent YELLOW entries).
+The loop runs end-to-end: **capture (Lead/Viewing/Offer) → live pipeline board → one-command
+Greek builder report**, with SC-1..SC-6 verified in `VERIFICATION.md` (T020). Then STOP for
+human review. Nothing beyond `specs/001-sales-pipeline-mvp/spec.md` scope — expansions are RED.
 
-## Tech stack
+## Session bootstrap (deterministic — do this before any work)
 
-- **Runtime**: Bun (1.3+) · **Language**: TypeScript
-- **DB**: `bun:sqlite`, single file `constructor.db` (gitignored). Raw SQL, **no ORM** (Article VIII).
-- **Server**: `Bun.serve` — thin HTTP/JSON API, no framework.
-- **Web**: React via Bun's bundler; minimal deps (react, react-dom, lucide-react); inline styles.
-- **Tests**: `bun test` (built-in runner). **NOT Jest.**
-- **Reports**: deterministic Greek Markdown to stdout. **No LLM API call anywhere in the app** — insight prose comes from the interactive `/insights` command (`.claude/commands/insights.md`), human-run under Max, pasted in.
+1. Read `.specify/memory/constitution.md` (BINDING, 10 Articles), then
+   `specs/001-sales-pipeline-mvp/{spec,plan,data-model,tasks}.md` and `DECISIONS.md`.
+2. Locate state from git, never from memory or notes:
+   `git log --oneline | grep -oE '^\S+ T[0-9]+[a-z]?' | head -1` → last completed task;
+   the next task is the one after it in `tasks.md`. `git status --short` must be clean.
+3. Run `bun test` — must be green before starting anything new.
 
-## Execution rules (non-negotiable)
+## THE LOOP (per task — no exceptions)
 
-- **Test-first (Article IX)**: failing test → implement → green. No impl before its test.
-- **One commit per task** (T001, T002, …). Never generate the whole project in one pass.
-- **STOP at every CHECKPOINT** (end of Phase 0 / 1 / 2 + FINAL) and wait for human review.
-- **Article X zones**: GREEN (pure impl detail) → act freely. YELLOW (real trade-off, no Article touched) → act, but append an ADR to `DECISIONS.md` **before moving on**. RED (touches Articles I–IX, expands scope, one-way door, or adds an external/network dependency) → STOP and ask. Unsure → RED.
-- **Stage precisely**: `git add <paths>`, never `git add -A`.
+```
+1. RED      Write the failing test that defines the behavior. Run it; confirm it fails
+            for the RIGHT reason (missing impl, not a typo).
+2. GREEN    Implement the minimum that passes. Run the full suite, not just the new file.
+3. REFACTOR Only with green tests. Keep code boring and direct (Article VIII).
+4. ZONE     Made a judgment call? GREEN→proceed · YELLOW→append ADR to DECISIONS.md NOW
+            (before the commit) · RED→STOP and ask. Unsure = RED.
+5. VERIFY   Gates below. For UI tasks also drive the real flow (phone viewport, <30s).
+6. COMMIT   One commit per task, message starts "TXXX: ". Stage by path, never `git add -A`.
+7. CHECKPOINT? If tasks.md marks one here: STOP, present the review package, WAIT.
+```
+
+Do NOT batch tasks, do NOT skip RED because the impl is "obvious", do NOT blow through a
+checkpoint. An unlogged YELLOW decision is a process violation.
+
+## Verification gates (all must pass before any commit)
+
+```bash
+bun test                                   # full suite green
+grep -rn "claude\|anthropic\|api.anthropic" src/  # → empty; no LLM call in-app (Article III)
+```
+Plus per-area checks: any new stored enum value → label in `src/domain/labels.ts` (the labels
+test enforces this); any query touching buyers → confirm it never joins `buyer_identity`
+(Article IV); any report output → no bare zero/negative without a recommendation (Article VI).
 
 ## Hard invariants (the two easiest to break)
 
-- **Article II**: no opportunity/event without a non-empty `next_action` — enforced in UI **and** SQL `CHECK`.
-- **Article IV**: buyer PII (name/phone/email) lives only in `buyer_identity`, AES-GCM encrypted, key from a non-committed secret, gated by `consent_flag`. PII never appears in any report, analytic query, or log. Erasure deletes the identity row; analytics survive de-identified.
+- **Article II**: no opportunity/event with empty `next_action` — SQL `CHECK` + UI submit-disable.
+- **Article IV**: PII only in `buyer_identity` (AES-GCM, key from env — never committed),
+  gated by `consent_flag`; never in reports/queries/logs; erasure leaves analytics intact.
 
-Also always-on: micro-area granularity (Article V), no naked bad numbers in reports (Article VI), Greek product surface — stored enum keys render via `src/domain/labels.ts`, never raw (FR-11).
+Always-on: micro-area granularity (V) · no naked bad numbers (VI) · Greek product surface —
+stored keys render only via `src/domain/labels.ts` (FR-11) · deterministic numbers (III).
+
+## Quality bar (how "highest standards" applies WITHIN scope)
+
+- **UX (Article I operationalized)**: mobile-first; every capture ≤30s; thumb-reachable
+  controls ≥44px; structured inputs over free text; visible feedback on save; the board
+  answers "what needs my attention" in one glance (needs-action sorted first).
+- **TDD**: the test is the spec of the behavior — name tests after the requirement they pin
+  (e.g. "Article II: …", "FR-13: …") so failures read as requirement violations.
+- **System design**: pure domain functions (no I/O) · queries layer owns all SQL · API is a
+  thin validator over queries · web is a thin client over the API. Dependencies point inward.
+- **Errors**: reject loudly at the boundary (400 with a Greek message); never swallow; the DB
+  CHECK is the last line, not the first.
 
 ## Commands
 
 ```bash
-bun install
-bun run db:init      # create constructor.db from src/db/schema.sql
+bun run db:init      # create constructor.db from src/db/schema.sql (idempotent)
 bun run seed <file>  # Day-0 migration (US-7)
-bun run dev          # API + web
+bun run dev          # API + web (phone viewport for UX checks)
 bun run report --builder="…" --project="…" --period=biweekly|monthly|quarterly
-bun test
+bun test             # the gate
 ```
 
-## Locked decisions (do not revisit — see DECISIONS.md for rationale)
+## Checkpoints (STOP and wait at each)
 
-- Opportunity grain = **buyer↔project** (`UNIQUE(buyer_id, project_id)`); current unit is `focus_unit_id`.
-- Operator identity = selector Χρήστος / Λωίδα / Γιολάντα, stamped as `handled_by`; no real auth.
-- Counter-offer: weight 0.6 toward asking, rounded €500 (value = YELLOW to change; determinism = RED).
-- Report periods: fixed non-overlapping by default; `--rolling` and `--as-of=DATE` supported.
-- `recommendation()` threshold pinned at **viewings ≥ 3**.
-- Deferred to Phase B: reservation/contract capture, `v_velocity`, `marketing_assets`, ilist sync, auth, hosting, multi-tenant.
+- **CHECKPOINT 0** after T006a — domain + init green; human verifies schema ↔ data-model.md.
+- **CHECKPOINT 1** after T013 — phone-viewport capture <30s; empty next_action blocks submit.
+- **CHECKPOINT 2** after T019 — reports <5s, Greek, zero naked bad numbers, no in-app LLM.
+- **FINAL** after T020 — full loop demonstrated; await human review before Phase B.
+
+## Locked decisions (do not revisit — rationale in DECISIONS.md)
+
+- Grain: one opportunity per **buyer↔project** (`UNIQUE(buyer_id, project_id)`); unit focus via `focus_unit_id`.
+- Operators: Χρήστος / Λωίδα / Γιολάντα selector → `handled_by`; no real auth.
+- Counter: 0.6 weight toward asking, rounded €500 (value change = YELLOW; determinism = RED).
+- Periods: fixed non-overlapping default; `--rolling`, `--as-of=DATE` supported.
+- `recommendation()` threshold pinned: viewings ≥ 3.
+- Insights: interactive `/insights` command only (Max, human-run) — in-app LLM/API = RED.
+- Phase B (do NOT build): reservations/contracts capture, `v_velocity`, `marketing_assets`,
+  ilist sync, auth, hosting, multi-tenant, portal syndication, native app.
