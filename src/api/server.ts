@@ -10,11 +10,14 @@
 
 import type { Database } from "bun:sqlite";
 import type { Server } from "bun";
+import { fileURLToPath } from "node:url";
 import { initDb } from "../db/init";
 import {
   activityCounters,
   createLead,
   listPipeline,
+  listProjects,
+  listUnits,
   logOffer,
   logViewing,
 } from "../db/queries";
@@ -208,6 +211,41 @@ function handleCounters(db: Database, url: URL): Response {
   return Response.json(activityCounters(db, requireProjectParam(url)));
 }
 
+// ─── Web client (T012) ───────────────────────────────────────────────────────
+// GET / serves src/web/index.html; GET /app.js serves the Bun.build browser
+// bundle of src/web/App.tsx (react + domain labels/counter bundled in). The
+// bundle is built lazily on first request and cached for the process lifetime —
+// `bun run dev` restart picks up App.tsx edits (prototype-adequate, ADR-0022).
+
+const INDEX_HTML = fileURLToPath(new URL("../web/index.html", import.meta.url));
+const APP_TSX = fileURLToPath(new URL("../web/App.tsx", import.meta.url));
+
+let appBundleCache: Promise<string> | null = null;
+
+function appBundle(): Promise<string> {
+  appBundleCache ??= (async () => {
+    const result = await Bun.build({ entrypoints: [APP_TSX], target: "browser" });
+    if (!result.success) {
+      appBundleCache = null; // do not cache a failure
+      throw new Error(result.logs.map((l) => l.message).join("\n"));
+    }
+    return result.outputs[0]!.text();
+  })();
+  return appBundleCache;
+}
+
+function serveIndex(): Response {
+  return new Response(Bun.file(INDEX_HTML), {
+    headers: { "content-type": "text/html; charset=utf-8" },
+  });
+}
+
+async function serveAppJs(): Promise<Response> {
+  return new Response(await appBundle(), {
+    headers: { "content-type": "text/javascript; charset=utf-8" },
+  });
+}
+
 // ─── Server factory ──────────────────────────────────────────────────────────
 
 /**
@@ -232,6 +270,14 @@ export function makeServer(db: Database, port = 0): Server {
             return handlePipeline(db, url);
           case "GET /counters":
             return handleCounters(db, url);
+          case "GET /projects":
+            return Response.json(listProjects(db));
+          case "GET /units":
+            return Response.json(listUnits(db, requireProjectParam(url)));
+          case "GET /":
+            return serveIndex();
+          case "GET /app.js":
+            return await serveAppJs();
           default:
             return jsonError(404, MSG.notFoundRoute);
         }

@@ -119,6 +119,8 @@ export interface AdvanceOpportunityInput {
 
 export interface PipelineCard {
   opportunityId: number;
+  /** Analytical buyer id (pseudonym owner) — lets the web sheets capture against a board buyer (T012). */
+  buyerId: number;
   pseudonym: string;
   unitCode: string | null;
   stage: Stage;
@@ -127,6 +129,21 @@ export interface PipelineCard {
   nextAction: string;
   nextOwner: string;
   updatedAt: string;
+}
+
+export interface ProjectSummary {
+  id: number;
+  builderName: string;
+  projectName: string;
+  area: string;
+  microArea: string;
+}
+
+export interface UnitOption {
+  id: number;
+  unitCode: string;
+  askingCurrent: number;
+  status: string;
 }
 
 export interface ActivityCounters {
@@ -514,6 +531,7 @@ export function listPipeline(db: Database, projectId: number): PipelineCard[] {
   return db
     .query<PipelineCard, [number]>(
       `SELECT o.id            AS opportunityId,
+              b.id            AS buyerId,
               b.pseudonym     AS pseudonym,
               u.unit_code     AS unitCode,
               o.stage         AS stage,
@@ -533,6 +551,43 @@ export function listPipeline(db: Database, projectId: number): PipelineCard[] {
                 CASE o.stage WHEN 'Κράτηση' THEN 0 WHEN 'Προσφορά' THEN 1 WHEN 'Επίσκεψη' THEN 2 ELSE 3 END,
                 o.updated_at ASC,
                 o.id ASC`,
+    )
+    .all(projectId);
+}
+
+/**
+ * T012: project list for the board's project selector. Analytical/read-only —
+ * Article V surfaces micro_area alongside the names.
+ */
+export function listProjects(db: Database): ProjectSummary[] {
+  return db
+    .query<ProjectSummary, []>(
+      `SELECT id             AS id,
+              builder_name   AS builderName,
+              project_name   AS projectName,
+              area           AS area,
+              micro_area     AS microArea
+       FROM projects
+       ORDER BY id ASC`,
+    )
+    .all();
+}
+
+/**
+ * T012: unit options for the capture sheets' structured unit grids (Article I —
+ * tap a unit code, never type it). All statuses returned; presentation decides
+ * what is selectable. Deterministic order: unit_code, then id.
+ */
+export function listUnits(db: Database, projectId: number): UnitOption[] {
+  return db
+    .query<UnitOption, [number]>(
+      `SELECT id              AS id,
+              unit_code       AS unitCode,
+              asking_current  AS askingCurrent,
+              status          AS status
+       FROM units
+       WHERE project_id = ?
+       ORDER BY unit_code ASC, id ASC`,
     )
     .all(projectId);
 }
