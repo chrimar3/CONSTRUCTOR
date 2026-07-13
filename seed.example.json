@@ -1,0 +1,364 @@
+{
+  "projects": [
+    {
+      "builder_name": "Παπαδόπουλος",
+      "project_name": "Κυψέλη-Α",
+      "area": "Κυψέλη",
+      "micro_area": "Κυψέλη · Πλατεία Κύπρου, block Α",
+      "total_units": 4,
+      "listed_at": "2026-05-04T09:00:00.000Z",
+      "exclusivity_start": "2026-05-01",
+      "exclusivity_end": "2027-01-01",
+      "exclusivity_phase": "initial",
+      "commission_model": "hybrid",
+      "units": [
+        {
+          "unit_code": "Α1",
+          "floor": 1,
+          "sqm": 72.5,
+          "rooms": 2,
+          "orientation": "ΝΑ",
+          "features": { "storage": true, "energy_class": "Β+" },
+          "asking_initial": 238000
+        },
+        {
+          "unit_code": "Α2",
+          "floor": 2,
+          "sqm": 85,
+          "rooms": 3,
+          "orientation": "Ν",
+          "features": { "storage": true, "energy_class": "Β+" },
+          "asking_initial": 265000
+        },
+        {
+          "unit_code": "Β1",
+          "floor": 3,
+          "sqm": 101,
+          "rooms": 3,
+          "orientation": "ΝΔ",
+          "features": { "parking": true, "storage": true, "energy_class": "Α" },
+          "asking_initial": 320000,
+          "asking_current": 310000
+        },
+        {
+          "unit_code": "Β2",
+          "floor": 4,
+          "sqm": 118,
+          "rooms": 4,
+          "orientation": "Ν",
+          "features": { "parking": true, "storage": true, "energy_class": "Α", "roof_garden": true },
+          "asking_initial": 395000
+        }
+      ]
+    },
+    {
+      "builder_name": "Αφοί Νικολάου",
+      "project_name": "Γκύζη-Β",
+      "area": "Γκύζη",
+      "micro_area": "Γκύζη · Πλατεία Ελευθερίας, block Β",
+      "total_units": 2,
+      "listed_at": "2026-06-10T09:00:00.000Z",
+      "exclusivity_start": "2026-06-01",
+      "exclusivity_end": "2027-02-01",
+      "exclusivity_phase": "initial",
+      "commission_model": "buyer_only",
+      "units": [
+        {
+          "unit_code": "Γ1",
+          "floor": 2,
+          "sqm": 64,
+          "rooms": 2,
+          "orientation": "Α",
+          "features": { "energy_class": "Β" },
+          "asking_initial": 189000
+        },
+        {
+          "unit_code": "Γ2",
+          "floor": 5,
+          "sqm": 92,
+          "rooms": 3,
+          "orientation": "ΝΑ",
+          "features": { "parking": true, "energy_class": "Α" },
+          "asking_initial": 292000
+        }
+      ]
+    }
+  ],
+  "buyers": [
+    {
+      "pseudonym": "#1",
+      "segment": "first_home",
+      "budget_band": "150-250k",
+      "financing": "mortgage",
+      "area_pref": "Κυψέλη",
+      "source_channel": "spitogatos",
+      "created_at": "2026-06-20T10:00:00.000Z"
+    },
+    {
+      "pseudonym": "#2",
+      "segment": "investor",
+      "budget_band": "250-400k",
+      "financing": "cash",
+      "area_pref": "Κυψέλη",
+      "source_channel": "xe",
+      "created_at": "2026-06-22T09:00:00.000Z"
+    },
+    {
+      "pseudonym": "#3",
+      "segment": "upgrader",
+      "budget_band": "250-400k",
+      "financing": "mortgage",
+      "area_pref": "Κυψέλη",
+      "source_channel": "referral",
+      "created_at": "2026-06-25T11:45:00.000Z"
+    },
+    {
+      "pseudonym": "#4",
+      "segment": "first_home",
+      "budget_band": "150-250k",
+      "financing": "spiti_mou_2",
+      "area_pref": "Γκύζη",
+      "source_channel": "walkin",
+      "created_at": "2026-07-02T10:30:00.000Z"
+    },
+    {
+      "pseudonym": "#5",
+      "segment": "foreign",
+      "budget_band": "400k+",
+      "financing": "cash",
+      "area_pref": "Κυψέλη",
+      "source_channel": "social",
+      "created_at": "2026-06-18T15:00:00.000Z"
+    },
+    {
+      "pseudonym": "#6",
+      "segment": "investor",
+      "budget_band": "150-250k",
+      "financing": "cash",
+      "area_pref": "Γκύζη",
+      "source_channel": "spitogatos",
+      "created_at": "2026-06-26T08:45:00.000Z"
+    },
+    {
+      "pseudonym": "#7",
+      "segment": "upgrader",
+      "budget_band": "400k+",
+      "financing": "mortgage",
+      "area_pref": "Κυψέλη",
+      "source_channel": "referral",
+      "created_at": "2026-07-06T14:00:00.000Z"
+    },
+    {
+      "pseudonym": "#8",
+      "segment": "first_home",
+      "budget_band": "150-250k",
+      "financing": "mortgage",
+      "area_pref": "Γκύζη",
+      "source_channel": "xe",
+      "created_at": "2026-06-29T11:00:00.000Z"
+    }
+  ],
+  "opportunities": [
+    {
+      "project": "Κυψέλη-Α",
+      "buyer": "#1",
+      "focus_unit": "Α1",
+      "stage": "Επίσκεψη",
+      "temperature": "warm",
+      "next_action": "Δεύτερη επίσκεψη στο Α1 με τους γονείς το Σάββατο",
+      "next_owner": "Χρήστος",
+      "updated_at": "2026-07-04T11:00:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-06-20T10:15:00.000Z",
+          "handled_by": "Χρήστος",
+          "next_action": "Κλείσιμο ραντεβού για επίσκεψη στο Α1"
+        },
+        {
+          "type": "viewing",
+          "date": "2026-07-04T11:00:00.000Z",
+          "unit": "Α1",
+          "interest": 3,
+          "handled_by": "Χρήστος",
+          "next_action": "Δεύτερη επίσκεψη στο Α1 με τους γονείς το Σάββατο"
+        }
+      ]
+    },
+    {
+      "project": "Κυψέλη-Α",
+      "buyer": "#2",
+      "focus_unit": "Β1",
+      "stage": "Προσφορά",
+      "temperature": "hot",
+      "next_action": "Αντιπρόταση στον αγοραστή μετά από συνεννόηση με τον εργολάβο",
+      "next_owner": "Λωίδα",
+      "updated_at": "2026-07-09T13:00:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-06-22T09:30:00.000Z",
+          "handled_by": "Λωίδα",
+          "next_action": "Τηλεφώνημα για διαθεσιμότητα και ραντεβού"
+        },
+        {
+          "type": "viewing",
+          "date": "2026-06-28T17:30:00.000Z",
+          "unit": "Β1",
+          "interest": 4,
+          "handled_by": "Λωίδα",
+          "next_action": "Αποστολή αναλυτικού τιμοκαταλόγου για το Β1"
+        },
+        {
+          "type": "offer",
+          "date": "2026-07-09T13:00:00.000Z",
+          "unit": "Β1",
+          "amount": 285000,
+          "note": "Προφορική προσφορά, ζητά τη θέση στάθμευσης στη συμφωνία",
+          "handled_by": "Λωίδα",
+          "next_action": "Αντιπρόταση στον αγοραστή μετά από συνεννόηση με τον εργολάβο"
+        }
+      ]
+    },
+    {
+      "project": "Κυψέλη-Α",
+      "buyer": "#3",
+      "focus_unit": "Α2",
+      "stage": "Επίσκεψη",
+      "temperature": "hot",
+      "next_action": "Αποστολή κάτοψης και σχεδίου αποπληρωμής για το Α2",
+      "next_owner": "Γιολάντα",
+      "updated_at": "2026-07-07T18:00:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-06-25T12:00:00.000Z",
+          "handled_by": "Γιολάντα",
+          "next_action": "Ραντεβού για επίσκεψη στο Α2"
+        },
+        {
+          "type": "viewing",
+          "date": "2026-07-07T18:00:00.000Z",
+          "unit": "Α2",
+          "interest": 5,
+          "handled_by": "Γιολάντα",
+          "next_action": "Αποστολή κάτοψης και σχεδίου αποπληρωμής για το Α2"
+        }
+      ]
+    },
+    {
+      "project": "Γκύζη-Β",
+      "buyer": "#4",
+      "focus_unit": "Γ1",
+      "stage": "Lead",
+      "temperature": "warm",
+      "next_action": "Τηλεφώνημα για ραντεβού επίσκεψης στο Γ1",
+      "next_owner": "Χρήστος",
+      "updated_at": "2026-07-02T10:40:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-07-02T10:40:00.000Z",
+          "handled_by": "Χρήστος",
+          "next_action": "Τηλεφώνημα για ραντεβού επίσκεψης στο Γ1"
+        }
+      ]
+    },
+    {
+      "project": "Κυψέλη-Α",
+      "buyer": "#5",
+      "focus_unit": "Β2",
+      "stage": "Προσφορά",
+      "temperature": "hot",
+      "next_action": "Παρουσίαση αντιπρότασης στον εργολάβο τη Δευτέρα",
+      "next_owner": "Λωίδα",
+      "updated_at": "2026-07-11T10:00:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-06-18T15:20:00.000Z",
+          "handled_by": "Χρήστος",
+          "next_action": "Αποστολή φωτογραφιών και βίντεο του ρετιρέ"
+        },
+        {
+          "type": "viewing",
+          "date": "2026-06-30T12:30:00.000Z",
+          "unit": "Β2",
+          "interest": 4,
+          "handled_by": "Λωίδα",
+          "next_action": "Δεύτερη επίσκεψη με τον σύμβουλό του"
+        },
+        {
+          "type": "offer",
+          "date": "2026-07-11T10:00:00.000Z",
+          "unit": "Β2",
+          "amount": 360000,
+          "note": "Μετρητά, ευελιξία στην ημερομηνία παράδοσης",
+          "handled_by": "Λωίδα",
+          "next_action": "Παρουσίαση αντιπρότασης στον εργολάβο τη Δευτέρα"
+        }
+      ]
+    },
+    {
+      "project": "Γκύζη-Β",
+      "buyer": "#6",
+      "focus_unit": "Γ2",
+      "stage": "Επίσκεψη",
+      "temperature": "cold",
+      "next_action": "Επανεπικοινωνία σε δύο εβδομάδες με νεότερα για την τιμή",
+      "next_owner": "Γιολάντα",
+      "updated_at": "2026-07-03T17:00:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-06-26T09:00:00.000Z",
+          "handled_by": "Γιολάντα",
+          "next_action": "Ραντεβού για επίσκεψη στο Γ2"
+        },
+        {
+          "type": "viewing",
+          "date": "2026-07-03T17:00:00.000Z",
+          "unit": "Γ2",
+          "interest": 2,
+          "handled_by": "Γιολάντα",
+          "next_action": "Επανεπικοινωνία σε δύο εβδομάδες με νεότερα για την τιμή"
+        }
+      ]
+    },
+    {
+      "project": "Κυψέλη-Α",
+      "buyer": "#7",
+      "stage": "Lead",
+      "temperature": "warm",
+      "next_action": "Αποστολή διαθέσιμων μονάδων με θέση στάθμευσης",
+      "next_owner": "Λωίδα",
+      "updated_at": "2026-07-06T14:10:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-07-06T14:10:00.000Z",
+          "handled_by": "Λωίδα",
+          "next_action": "Αποστολή διαθέσιμων μονάδων με θέση στάθμευσης"
+        }
+      ]
+    },
+    {
+      "project": "Γκύζη-Β",
+      "buyer": "#8",
+      "focus_unit": "Γ1",
+      "stage": "Lead",
+      "temperature": "cold",
+      "next_action": "Υπενθύμιση μετά την έγκριση του στεγαστικού δανείου",
+      "next_owner": "Γιολάντα",
+      "updated_at": "2026-06-29T11:30:00.000Z",
+      "events": [
+        {
+          "type": "inquiry",
+          "date": "2026-06-29T11:30:00.000Z",
+          "handled_by": "Χρήστος",
+          "next_action": "Υπενθύμιση μετά την έγκριση του στεγαστικού δανείου"
+        }
+      ]
+    }
+  ]
+}
