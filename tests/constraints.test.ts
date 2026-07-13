@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterAll } from "bun:test";
-import { rmSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import type { Database } from "bun:sqlite";
 import { initDb } from "../src/db/init";
 import {
@@ -100,24 +101,59 @@ describe("Article II — next_action enforced at the query layer (throw before a
 });
 
 describe("Article II — next_action enforced at the DB layer (SQL CHECK is the last line)", () => {
-  test("raw opportunity insert with blank next_action fails the CHECK", () => {
+  // T008: raw db.run bypasses queries.ts entirely — the CHECK must hold on its own.
+  const blanks = ["", " ", "   ", "\t", "\n\t", "\r\n", " \n "];
+
+  test("raw opportunity insert with blank/whitespace next_action fails the CHECK and writes nothing", () => {
     const { buyerId } = createLead(db, LEAD);
-    expect(() =>
-      db.run(
-        `INSERT INTO opportunities (project_id, buyer_id, stage, temperature, next_action, next_owner, updated_at)
-         VALUES (2, ${buyerId}, 'Lead', 'warm', '   ', 'Χρήστος', '2026-07-13T00:00:00.000Z')`
-      )
-    ).toThrow();
+    const before = count("opportunities");
+    for (const blank of blanks) {
+      expect(() =>
+        db
+          .query(
+            `INSERT INTO opportunities (project_id, buyer_id, stage, temperature, next_action, next_owner, updated_at)
+             VALUES (?, ?, 'Lead', 'warm', ?, 'Χρήστος', '2026-07-13T00:00:00.000Z')`
+          )
+          .run(2, buyerId, blank)
+      ).toThrow(/CHECK constraint failed.*next_action/);
+    }
+    expect(count("opportunities")).toBe(before);
   });
 
-  test("raw sales_event insert with blank next_action fails the CHECK", () => {
+  test("raw sales_event insert with blank/whitespace next_action fails the CHECK and writes nothing", () => {
     const { opportunityId } = createLead(db, LEAD);
+    const before = count("sales_events");
+    for (const blank of blanks) {
+      expect(() =>
+        db
+          .query(
+            `INSERT INTO sales_events (opportunity_id, event_type, event_date, handled_by, next_action)
+             VALUES (?, 'viewing', '2026-07-13', 'Λωίδα', ?)`
+          )
+          .run(opportunityId, blank)
+      ).toThrow(/CHECK constraint failed.*next_action/);
+    }
+    expect(count("sales_events")).toBe(before);
+  });
+
+  test("raw NULL next_action is equally rejected (NOT NULL is part of the same guarantee)", () => {
+    const { opportunityId, buyerId } = createLead(db, LEAD);
     expect(() =>
-      db.run(
-        `INSERT INTO sales_events (opportunity_id, event_type, event_date, handled_by, next_action)
-         VALUES (${opportunityId}, 'viewing', '2026-07-13', 'Λωίδα', '')`
-      )
-    ).toThrow();
+      db
+        .query(
+          `INSERT INTO opportunities (project_id, buyer_id, stage, temperature, next_action, next_owner, updated_at)
+           VALUES (?, ?, 'Lead', 'warm', NULL, 'Χρήστος', '2026-07-13T00:00:00.000Z')`
+        )
+        .run(2, buyerId)
+    ).toThrow(/NOT NULL constraint failed/);
+    expect(() =>
+      db
+        .query(
+          `INSERT INTO sales_events (opportunity_id, event_type, event_date, handled_by, next_action)
+           VALUES (?, 'viewing', '2026-07-13', 'Λωίδα', NULL)`
+        )
+        .run(opportunityId)
+    ).toThrow(/NOT NULL constraint failed/);
   });
 });
 
@@ -136,6 +172,86 @@ describe("Article IV — buyers here are analytical only", () => {
     const { pseudonym } = createLead(db, LEAD);
     expect(pseudonym).toMatch(/^#\d+$/);
     expect(count("buyer_identity")).toBe(0);
+  });
+});
+
+describe("Article IV — analytical queries are fully independent of buyer_identity (T008)", () => {
+  /**
+   * Source audit: extract every string literal from src/db/queries.ts that
+   * carries SQL (SELECT/INSERT/UPDATE/DELETE) and assert none references
+   * buyer_identity. Comments/error messages may name the table (they document
+   * the separation); the SQL itself must never touch it.
+   */
+  test("the SQL text in src/db/queries.ts never references buyer_identity", () => {
+    const source = readFileSync(join(import.meta.dir, "../src/db/queries.ts"), "utf-8");
+    const noComments = source
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/[^\n]*/g, "");
+    const literals = noComments.match(/`[^`]*`|'[^'\n]*'|"[^"\n]*"/g) ?? [];
+    const sqlStrings = literals.filter((s) => /\b(SELECT|INSERT|UPDATE|DELETE)\b/i.test(s));
+
+    expect(sqlStrings.length).toBeGreaterThan(10); // audit must not be vacuous
+    for (const sql of sqlStrings) {
+      expect(sql).not.toMatch(/buyer_identity/i);
+    }
+  });
+
+  /** Seed 4 analytical buyers (via createLead) — buyer_identity stays at 0 rows. */
+  function seedBuyerPool(): void {
+    const variants = [
+      { segment: "first_home", budgetBand: "250-400k", areaPref: "Κυψέλη" },
+      { segment: "first_home", budgetBand: "250-400k", areaPref: "Κυψέλη" },
+      { segment: "investor", budgetBand: "<150k", areaPref: "Παγκράτι" },
+      { segment: "investor", budgetBand: "150-250k", areaPref: "Παγκράτι" },
+    ];
+    for (const v of variants) {
+      createLead(db, { ...LEAD, buyer: { sourceChannel: "spitogatos", ...v } });
+    }
+    expect(count("buyer_identity")).toBe(0); // precondition: PII table is empty
+  }
+
+  test("v_buyer_pool returns correct segment/budget_band counts with zero rows in buyer_identity", () => {
+    seedBuyerPool();
+    const pool = db
+      .query<{ segment: string; area_pref: string; budget_band: string; ready_buyers: number }, []>(
+        "SELECT segment, area_pref, budget_band, ready_buyers FROM v_buyer_pool ORDER BY segment, budget_band"
+      )
+      .all();
+    // Lexicographic ORDER BY: '150-250k' ('1' = 0x31) sorts before '<150k' ('<' = 0x3C).
+    expect(pool).toEqual([
+      { segment: "first_home", area_pref: "Κυψέλη", budget_band: "250-400k", ready_buyers: 2 },
+      { segment: "investor", area_pref: "Παγκράτι", budget_band: "150-250k", ready_buyers: 1 },
+      { segment: "investor", area_pref: "Παγκράτι", budget_band: "<150k", ready_buyers: 1 },
+    ]);
+  });
+
+  test("listPipeline and activityCounters return correctly with buyer_identity empty", () => {
+    seedBuyerPool();
+    const cards = listPipeline(db, 1);
+    expect(cards).toHaveLength(4);
+    expect(cards.every((c) => /^#\d+$/.test(c.pseudonym))).toBe(true); // pseudonyms, never names
+    expect(activityCounters(db, 1)).toEqual({ live: 4, viewings: 0, offers: 0 });
+  });
+
+  test("analytical surface survives buyer_identity being DROPPED (hard independence proof)", () => {
+    seedBuyerPool();
+    const { buyerId } = createLead(db, {
+      ...LEAD,
+      buyer: { sourceChannel: "xe", segment: "upgrader", budgetBand: "400k+" },
+    });
+    logViewing(db, {
+      projectId: 1, buyerId, unitId: 11, interest: 4,
+      handledBy: "Λωίδα", nextAction: "Πρόταση τιμής",
+    });
+
+    db.run("DROP TABLE buyer_identity"); // if any query touched it, everything below would throw
+
+    const pool = db
+      .query<{ ready_buyers: number }, []>("SELECT ready_buyers FROM v_buyer_pool")
+      .all();
+    expect(pool.reduce((sum, r) => sum + r.ready_buyers, 0)).toBe(5);
+    expect(listPipeline(db, 1)).toHaveLength(5);
+    expect(activityCounters(db, 1)).toEqual({ live: 5, viewings: 1, offers: 0 });
   });
 });
 
