@@ -19,7 +19,8 @@ pipeline and come to the human — never worked around.
 
 ```
 0. RESET   (once) Create the rebuild branch; clear prior task outputs (below).
-1. RUN     Workflow name "constructor-rebuild", args {phase: N}   (N = 0, then 1, 2, 3)
+1. RUN     Workflow with scriptPath ".claude/workflows/constructor-rebuild.js"
+           (absolute path), args {phase: N}   (N = 0, then 1, 2, 3)
 2. WATCH   Pipeline runs task-agents sequentially; each: skills-armed TDD → full suite
            green → one commit → structured result. Independent auditor closes the phase.
 3a. HALT?  An agent returned RED/blocked → bring the human the exact question →
@@ -107,8 +108,8 @@ workflow script ONLY if the ruling changes its instructions, and re-invoke with
 > Read CLAUDE.md, then REBUILD-RUNBOOK.md, and execute the runbook exactly, following
 > its Driver rules. Locate current state from git first (a partial rebuild resumes —
 > never restarts). If Step 0 RESET has not run: perform it, show me the removal diff
-> before committing. Then drive the phase loop: `Workflow name "constructor-rebuild"`
-> with `args {phase: N}` starting at the first incomplete phase; capture the runId;
+> before committing. Then drive the phase loop: `Workflow` with scriptPath
+> `.claude/workflows/constructor-rebuild.js` (absolute) and `args {phase: N}` starting at the first incomplete phase; capture the runId;
 > on completion bring me the audit verdict + checkpoint package, outcome first, and
 > STOP for my approval before the next phase. RED/blocked halts come to me verbatim
 > with one recommendation; after my ruling, apply it yourself in the main session and
