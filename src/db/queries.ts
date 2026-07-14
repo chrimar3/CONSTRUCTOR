@@ -153,6 +153,24 @@ export interface ActivityCounters {
   liveOpportunities: number;
 }
 
+/** T014 — event totals inside a half-open report window [start, endExclusive). */
+export interface WindowActivity {
+  inquiries: number;
+  viewings: number;
+  offers: number;
+}
+
+/** T014 — per-unit report row: in-window activity + the unit's current asking. */
+export interface UnitWindowActivity {
+  unitId: number;
+  unitCode: string;
+  askingCurrent: number;
+  viewings: number;
+  offers: number;
+  /** LATEST in-window offer by event id (the live position), never MAX (ADR-0013). */
+  latestOfferAmount: number | null;
+}
+
 // ─── Guards (run BEFORE any DB statement) ────────────────────────────────────
 
 /** Article II mirrored in JS: JS trim() covers all Unicode whitespace. */
@@ -590,6 +608,98 @@ export function listUnits(db: Database, projectId: number): UnitOption[] {
        ORDER BY unit_code ASC, id ASC`,
     )
     .all(projectId);
+}
+
+/**
+ * T014: single project header data for reports (analytical only — Article IV).
+ * Returns null when the project does not exist; the report boundary decides
+ * how to surface that (it is a caller error, not report data).
+ */
+export function getProject(db: Database, projectId: number): ProjectSummary | null {
+  return db
+    .query<ProjectSummary, [number]>(
+      `SELECT id             AS id,
+              builder_name   AS builderName,
+              project_name   AS projectName,
+              area           AS area,
+              micro_area     AS microArea
+       FROM projects
+       WHERE id = ?`,
+    )
+    .get(projectId);
+}
+
+/**
+ * T014: activity totals for a report window. Half-open [start, endExclusive) on
+ * event_date string comparison — an event exactly on a boundary lands in exactly
+ * ONE of two adjacent windows (FR-13, no double-counting across reports).
+ */
+export function activityInWindow(
+  db: Database,
+  projectId: number,
+  start: string,
+  endExclusive: string,
+): WindowActivity {
+  const row = db
+    .query<{ inquiries: number; viewings: number; offers: number }, [number, string, string]>(
+      `SELECT COALESCE(SUM(e.event_type = 'inquiry'), 0) AS inquiries,
+              COALESCE(SUM(e.event_type = 'viewing'), 0) AS viewings,
+              COALESCE(SUM(e.event_type = 'offer'), 0)   AS offers
+       FROM sales_events e
+       JOIN opportunities o ON o.id = e.opportunity_id
+       WHERE o.project_id = ? AND e.event_date >= ? AND e.event_date < ?`,
+    )
+    .get(projectId, start, endExclusive)!;
+
+  return {
+    inquiries: Number(row.inquiries),
+    viewings: Number(row.viewings),
+    offers: Number(row.offers),
+  };
+}
+
+/**
+ * T014: per-unit breakdown for a report window. EVERY unit of the project is
+ * returned (a silent unit is exactly the cold metric Article VI must pair with a
+ * recommendation), with in-window viewing/offer counts and the LATEST in-window
+ * offer by event id. Deterministic order: unit_code, then id.
+ */
+export function unitActivityInWindow(
+  db: Database,
+  projectId: number,
+  start: string,
+  endExclusive: string,
+): UnitWindowActivity[] {
+  return db
+    .query<
+      UnitWindowActivity,
+      [string, string, string, string, number]
+    >(
+      `SELECT u.id           AS unitId,
+              u.unit_code    AS unitCode,
+              u.asking_current AS askingCurrent,
+              COALESCE(SUM(e.event_type = 'viewing'), 0) AS viewings,
+              COALESCE(SUM(e.event_type = 'offer'), 0)   AS offers,
+              (SELECT e2.amount FROM sales_events e2
+                WHERE e2.unit_id = u.id AND e2.event_type = 'offer'
+                  AND e2.event_date >= ? AND e2.event_date < ?
+                ORDER BY e2.id DESC LIMIT 1) AS latestOfferAmount
+       FROM units u
+       LEFT JOIN sales_events e
+         ON e.unit_id = u.id AND e.event_date >= ? AND e.event_date < ?
+       WHERE u.project_id = ?
+       GROUP BY u.id
+       ORDER BY u.unit_code ASC, u.id ASC`,
+    )
+    .all(start, endExclusive, start, endExclusive, projectId)
+    .map((row) => ({
+      unitId: Number(row.unitId),
+      unitCode: row.unitCode,
+      askingCurrent: Number(row.askingCurrent),
+      viewings: Number(row.viewings),
+      offers: Number(row.offers),
+      latestOfferAmount: row.latestOfferAmount === null ? null : Number(row.latestOfferAmount),
+    }));
 }
 
 /**

@@ -6,8 +6,8 @@
 // Article VI: TOTAL function — non-empty Greek output for ANY input (NaN, negatives,
 // Infinity, missing fields, null object). It never throws: a naked bad number must
 // never be able to lack a recommendation.
-// Article III: euro formatting is byte-deterministic (manual dot separators, never
-// toLocaleString/Intl — no dependence on the host's ICU build).
+// Article III: euro formatting is byte-deterministic (manual dot separators; no
+// locale/ICU-dependent formatting API — output identical on any host).
 
 export interface RecommendationSignals {
   /** Viewings in the report period for this unit. */
