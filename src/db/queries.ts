@@ -165,10 +165,24 @@ export interface UnitWindowActivity {
   unitId: number;
   unitCode: string;
   askingCurrent: number;
+  /** T016 — needed by the monthly comps-based € target (€/m² × unit m²). */
+  sqm: number | null;
+  /** T016 — stored unit status key; the monthly report selects active inventory by it. */
+  status: string;
   viewings: number;
   offers: number;
   /** LATEST in-window offer by event id (the live position), never MAX (ADR-0013). */
   latestOfferAmount: number | null;
+}
+
+/** T016 — one sold unit's price realization (v_price_realization view). */
+export interface UnitRealization {
+  unitId: number;
+  unitCode: string;
+  askingInitial: number;
+  salePrice: number;
+  /** sale_price / asking_initial as a fraction (e.g. 0.92) — straight from the view. */
+  realization: number;
 }
 
 // ─── Guards (run BEFORE any DB statement) ────────────────────────────────────
@@ -678,6 +692,8 @@ export function unitActivityInWindow(
       `SELECT u.id           AS unitId,
               u.unit_code    AS unitCode,
               u.asking_current AS askingCurrent,
+              u.sqm          AS sqm,
+              u.status       AS status,
               COALESCE(SUM(e.event_type = 'viewing'), 0) AS viewings,
               COALESCE(SUM(e.event_type = 'offer'), 0)   AS offers,
               (SELECT e2.amount FROM sales_events e2
@@ -696,10 +712,54 @@ export function unitActivityInWindow(
       unitId: Number(row.unitId),
       unitCode: row.unitCode,
       askingCurrent: Number(row.askingCurrent),
+      sqm: row.sqm === null ? null : Number(row.sqm),
+      status: row.status,
       viewings: Number(row.viewings),
       offers: Number(row.offers),
       latestOfferAmount: row.latestOfferAmount === null ? null : Number(row.latestOfferAmount),
     }));
+}
+
+/**
+ * T016: price realization per sold unit — reads the schema's deterministic
+ * v_price_realization view (sale_price / asking_initial, sold units only) and
+ * joins units for display fields. Deterministic order: unit_code, then id.
+ */
+export function priceRealization(db: Database, projectId: number): UnitRealization[] {
+  return db
+    .query<UnitRealization, [number]>(
+      `SELECT v.unit_id        AS unitId,
+              u.unit_code      AS unitCode,
+              u.asking_initial AS askingInitial,
+              u.sale_price     AS salePrice,
+              v.realization    AS realization
+       FROM v_price_realization v
+       JOIN units u ON u.id = v.unit_id
+       WHERE v.project_id = ?
+       ORDER BY u.unit_code ASC, u.id ASC`,
+    )
+    .all(projectId)
+    .map((row) => ({
+      unitId: Number(row.unitId),
+      unitCode: row.unitCode,
+      askingInitial: Number(row.askingInitial),
+      salePrice: Number(row.salePrice),
+      realization: Number(row.realization),
+    }));
+}
+
+/**
+ * T016: units still available for sale — the absorption forecast's remaining
+ * stock. status = 'live' only: reserved units are on their way out and
+ * sold/withdrawn units are no longer inventory.
+ */
+export function liveUnitCount(db: Database, projectId: number): number {
+  const row = db
+    .query<{ n: number }, [number]>(
+      "SELECT COUNT(*) AS n FROM units WHERE project_id = ? AND status = 'live'",
+    )
+    .get(projectId)!;
+  return Number(row.n);
 }
 
 /**

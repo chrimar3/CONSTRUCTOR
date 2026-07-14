@@ -53,6 +53,13 @@ const BUDGET_BAND_LABELS: Record<string, string> = {
   "400k+": "400.000 € και άνω",
 };
 
+// T016 — the monthly micro-area comparative labels each comp by its stored
+// source key (comps.source, FR-12). Greek display only (FR-11); wording: ADR-0026.
+const COMP_SOURCE_LABELS: Record<string, string> = {
+  own_transaction: "δική μας πώληση",
+  manual_known_sale: "καταγεγραμμένη πώληση περιοχής",
+};
+
 function lookup(map: Record<string, string>, kind: string, key: string): string {
   if (!Object.prototype.hasOwnProperty.call(map, key)) {
     throw new RangeError(`No Greek label for ${kind} key: "${key}" (FR-11: add it to src/domain/labels.ts)`);
@@ -82,4 +89,8 @@ export function segmentLabel(segment: string): string {
 
 export function budgetBandLabel(budgetBand: string): string {
   return lookup(BUDGET_BAND_LABELS, "budget_band", budgetBand);
+}
+
+export function compSourceLabel(source: string): string {
+  return lookup(COMP_SOURCE_LABELS, "comp source", source);
 }
