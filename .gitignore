@@ -14,5 +14,10 @@ constructor.db-shm
 node_modules/
 dist/
 
+# DESIGN-LOOP capture output — regenerable via `bash scripts/design-gates.sh`
+# (screenshots, isolated fixture DB, audit/gates JSON, blind decks). The harness
+# reproduces these byte-for-byte; the committed rail is scripts/design/*.
+artifacts/
+
 # OS
 .DS_Store
