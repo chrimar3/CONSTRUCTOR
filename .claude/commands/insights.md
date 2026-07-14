@@ -5,7 +5,25 @@ argument-hint: "[paste the --brief output, or leave empty and paste when asked]"
 
 You are writing the **insight lines** for a client-facing progress report that our agency sends to a construction-firm client (εργολάβος) every two weeks. Our agency is the builder's outsourced sales department.
 
-Input — the deterministic insight brief produced by `bun run report --brief`:
+Input — the deterministic insight brief produced by
+`bun run report --builder="…" --project="…" --period=biweekly|monthly|quarterly --brief`.
+It is a JSON object with these fields (all numbers computed from SQL, never estimated):
+
+- `project` — builderName, projectName, microArea (always micro-area precision).
+- `period` — cadence, start/end (YYYY-MM-DD), days: the fixed report window.
+- `totals` / `previousPeriod` / `deltas` — inquiries, viewings, offers for the
+  current window, the adjacent previous window, and their signed difference
+  (a negative delta is a slowdown signal).
+- `units` — active inventory only. Per unit: `viewings`, `offers`,
+  `latestOfferAmount`, `offerGap` (€ `amount` + `pctBelowAsking` when the latest
+  offer sits below asking; null otherwise), `compsTarget` (comps-derived € figure,
+  median €/m² × the unit's m²; null when no defensible comps exist), `cold`
+  (true = zero offers this window), and `recommendation` — the deterministic,
+  data-derived recommendation for that unit. Base your sentences on these
+  recommendations; do not invent different numbers or actions.
+- `coldUnits` — unit codes with zero offers this window.
+- `compsCount` — comparables known for the micro-area; 0 means comps are absent,
+  so say so plainly instead of citing any comps-based figure.
 
 $ARGUMENTS
 
