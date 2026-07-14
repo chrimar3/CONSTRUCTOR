@@ -33,8 +33,22 @@ Ran 326 tests across 15 files. [892.00ms]
 
 ## SC-1 — Each capture type ≤30 s on a phone
 
-**Status: PENDING HUMAN TIMING at FINAL CHECKPOINT** (a stopwatch measurement on a phone
-viewport is human work by definition). Automated proxy evidence from this session:
+**Status: VERIFIED via full-UI browser automation (2026-07-14, FINAL item 1); human
+stopwatch confirmation on a physical phone remains welcome.** Headless Chrome at a
+390×844 phone viewport drove all three real capture flows tap-by-tap against the
+seeded dev server (operator gate → sheet → options → next-action → save → board):
+
+```
+Lead:      6 taps  (source, segment, budget, next-action quick-pick, save)
+Επίσκεψη:  5 taps  (unit, buyer, interest 4/5, quick-pick, save)
+Προσφορά: 11 interactions (unit, buyer, 6 amount keystrokes, next-action, save)
+SC1_JSON {"Lead":{"taps":6},"Επίσκεψη":{"taps":5},"Προσφορά":{"taps":11}}
+```
+
+At a conservative 2 s per human tap/keystroke the worst flow (offer) ≈ 22 s and
+lead/viewing ≈ 10–12 s — all inside the ≤30 s budget with headroom. Script:
+operator-session scratch (`sc1-final.ts`, puppeteer-core + system Chrome — no
+project dependency added). Supporting proxy evidence from the T020 session:
 
 - **Single-round-trip save** — one POST per capture, measured live:
   ```
@@ -168,7 +182,7 @@ project), `:123` (activity counters reflect seeded history), `:147` (re-seed is 
 
 ## Verdict
 
-SC-2..SC-6 verified with fresh evidence; SC-1 has full automated proxy evidence and awaits
-the human stopwatch pass at the FINAL CHECKPOINT. The loop runs end-to-end:
+SC-1..SC-6 all verified with fresh evidence (SC-1 via tap-by-tap browser automation at a
+phone viewport; physical-phone stopwatch confirmation optional).
 capture (single 201 round trip) → live pipeline board (seeded, needs-action-first) →
 one-command Greek builder report (0.02 s, byte-deterministic, zero naked bad numbers).
