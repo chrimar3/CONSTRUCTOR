@@ -5,7 +5,17 @@
 // comma, dot thousands via formatEuro) — never toLocaleString/Intl.
 
 import { counter, type CounterSuggestion } from "../domain/counter";
+import { isValidPinFormat } from "../domain/pin";
 import { formatEuro } from "../domain/recommend";
+
+/**
+ * B0a (RULING 2026-07-14b) — PIN-gate submit predicate: the trimmed input must
+ * be a well-formed team PIN (domain policy, 4-12 digits). Pure — headlessly
+ * testable; the gate component both disables the button and guards submit().
+ */
+export function pinSubmittable(raw: string): boolean {
+  return isValidPinFormat(raw.trim());
+}
 
 /**
  * Parses an operator-typed € amount ("250.000", "250000", " 1.250.500 ") to a

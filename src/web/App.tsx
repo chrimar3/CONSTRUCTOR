@@ -26,6 +26,7 @@ import {
   counterPreview,
   formatPct,
   parseAmount,
+  pinSubmittable,
 } from "./helpers";
 
 // ─── API result shapes (mirror src/db/queries.ts) ────────────────────────────
@@ -110,11 +111,22 @@ function storeSessionOperator(operator: string): void {
 
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 
+// B0a — carries the HTTP status so the app can route 401 (PIN required, RULING
+// 2026-07-14b) to the PIN gate instead of the generic error screen.
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path);
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(body?.error ?? "Σφάλμα επικοινωνίας με τον διακομιστή");
+    throw new HttpError(res.status, body?.error ?? "Σφάλμα επικοινωνίας με τον διακομιστή");
   }
   return (await res.json()) as T;
 }
@@ -127,7 +139,7 @@ async function postJson<T>(path: string, body: Record<string, unknown>): Promise
   });
   const data = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
   if (!res.ok || data === null) {
-    throw new Error(data?.error ?? "Σφάλμα επικοινωνίας με τον διακομιστή");
+    throw new HttpError(res.status, data?.error ?? "Σφάλμα επικοινωνίας με τον διακομιστή");
   }
   return data;
 }
@@ -414,6 +426,93 @@ function buyerOptions(cards: Card[]): Option[] {
     hint: c.unitCode ?? stageLabel(c.stage),
     color: TEMP_COLOR[c.temperature],
   }));
+}
+
+/**
+ * B0a (RULING 2026-07-14b) — full-screen team-PIN screen: shown whenever the
+ * API answers 401, BEFORE the "Ποιος είσαι;" operator gate. Numeric input with
+ * big touch targets (phone number pad via inputMode). The session cookie the
+ * server mints is HttpOnly — the client never sees or stores the token; it
+ * only sends the PIN once and retries.
+ */
+function PinGate(props: { onSuccess: () => void }) {
+  const [pin, setPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submittable = pinSubmittable(pin) && !busy;
+
+  async function submit() {
+    if (!submittable) return; // non-functional while malformed, not just greyed out
+    setBusy(true);
+    setError(null);
+    try {
+      await postJson<{ ok: boolean }>("/login", { pin: pin.trim() });
+      props.onSuccess();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Σφάλμα σύνδεσης");
+      setPin("");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "#f4f4f5", overflowY: "auto", zIndex: 50 }}
+    >
+      <div style={{ ...S.page, padding: "0 16px 40px" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "48px 0 8px", textAlign: "center" }}>
+          Κωδικός ομάδας
+        </h1>
+        <p style={{ textAlign: "center", color: "#6b7280", fontSize: 14, margin: "0 0 24px" }}>
+          Βάλε το PIN της ομάδας για να συνεχίσεις.
+        </p>
+        <input
+          style={{
+            ...S.input,
+            minHeight: 56,
+            fontSize: 24,
+            fontWeight: 700,
+            textAlign: "center",
+            letterSpacing: 8,
+          }}
+          type="password"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={12}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void submit();
+          }}
+          placeholder="••••"
+          aria-label="PIN ομάδας"
+        />
+        {error !== null ? (
+          <div
+            style={{
+              marginTop: 12,
+              color: "#b91c1c",
+              fontWeight: 600,
+              fontSize: 14,
+              textAlign: "center",
+            }}
+          >
+            {error}
+          </div>
+        ) : null}
+        <div style={{ marginTop: 20 }}>
+          <button
+            type="button"
+            disabled={!submittable}
+            onClick={submit}
+            style={S.submit(submittable)}
+          >
+            {busy ? "Έλεγχος…" : "Είσοδος"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -965,6 +1064,8 @@ function CounterStat(props: { label: string; value: number }) {
 type View = "board" | "lead" | "viewing" | "offer";
 
 function App() {
+  // B0a — the API answered 401: the team PIN is required before anything else.
+  const [pinRequired, setPinRequired] = useState(false);
   // T012a — session operator identity: asked on open, switchable from the header.
   const [operator, setOperator] = useState<string | null>(loadSessionOperator);
   const [switchingOperator, setSwitchingOperator] = useState(false);
@@ -977,6 +1078,15 @@ function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // B0a — one 401 handler for every load path: PIN screen, not the error screen.
+  const onLoadFailed = useCallback((e: unknown) => {
+    if (e instanceof HttpError && e.status === 401) {
+      setPinRequired(true);
+      return;
+    }
+    setLoadError(e instanceof Error ? e.message : "Σφάλμα φόρτωσης");
+  }, []);
+
   const refresh = useCallback(async (pid: number) => {
     const [pipeline, counts, unitRows] = await Promise.all([
       getJson<Card[]>(`/pipeline?project=${pid}`),
@@ -988,24 +1098,24 @@ function App() {
     setUnits(unitRows);
   }, []);
 
+  const loadProjects = useCallback(async () => {
+    try {
+      const rows = await getJson<Project[]>("/projects");
+      setProjects(rows);
+      if (rows.length > 0) setProjectId((cur) => cur ?? rows[0]!.id);
+    } catch (e) {
+      onLoadFailed(e);
+    }
+  }, [onLoadFailed]);
+
   useEffect(() => {
-    (async () => {
-      try {
-        const rows = await getJson<Project[]>("/projects");
-        setProjects(rows);
-        if (rows.length > 0) setProjectId(rows[0]!.id);
-      } catch (e) {
-        setLoadError(e instanceof Error ? e.message : "Σφάλμα φόρτωσης");
-      }
-    })();
-  }, []);
+    void loadProjects();
+  }, [loadProjects]);
 
   useEffect(() => {
     if (projectId === null) return;
-    refresh(projectId).catch((e: unknown) => {
-      setLoadError(e instanceof Error ? e.message : "Σφάλμα φόρτωσης");
-    });
-  }, [projectId, refresh]);
+    refresh(projectId).catch(onLoadFailed);
+  }, [projectId, refresh, onLoadFailed]);
 
   useEffect(() => {
     if (toast === null) return;
@@ -1028,6 +1138,23 @@ function App() {
   }
 
   const project = projects?.find((p) => p.id === projectId) ?? null;
+
+  // B0a — PIN gate comes BEFORE the operator gate: with the session cookie set
+  // by /login, reload the data the 401 interrupted and proceed as today.
+  if (pinRequired) {
+    return (
+      <PinGate
+        onSuccess={() => {
+          setPinRequired(false);
+          setLoadError(null);
+          void loadProjects();
+          if (projectId !== null) {
+            refresh(projectId).catch(onLoadFailed);
+          }
+        }}
+      />
+    );
+  }
 
   // T012a — identity comes first: no board or capture without a session operator.
   if (operator === null) {

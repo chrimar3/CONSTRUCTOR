@@ -10,9 +10,11 @@
 
 import type { Database } from "bun:sqlite";
 import type { Server } from "bun";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { initDb } from "../db/init";
 import { OPERATORS, isOperator } from "../domain/operators";
+import { isValidPinFormat } from "../domain/pin";
 import {
   activityCounters,
   createLead,
@@ -48,6 +50,10 @@ const MSG = {
   notFoundEntity: "Δεν βρέθηκε το έργο, ο αγοραστής ή το ακίνητο",
   internal: "Εσωτερικό σφάλμα",
   field: (name: string) => `Λείπει ή είναι άκυρο το πεδίο: ${name}`,
+  // B0a (RULING 2026-07-14b) — team PIN gate messages. Never interpolate the
+  // PIN or a session token into any message.
+  loginRequired: "Απαιτείται σύνδεση με το PIN της ομάδας",
+  pinWrong: "Λάθος PIN",
 } as const;
 
 function jsonError(status: number, message: string): Response {
@@ -261,20 +267,128 @@ async function serveAppJs(): Promise<Response> {
   });
 }
 
+// ─── B0a — team PIN session gate (RULING 2026-07-14b) ───────────────────────
+// When a PIN is configured, every request except POST /login and the static app
+// shell (GET / + /app.js — code only, no pipeline data; the PIN screen ships
+// inside the bundle) requires a session cookie minted by /login. The PIN and
+// the session tokens never appear in any log or error message.
+
+const SESSION_COOKIE = "constructor_session";
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+const WRONG_PIN_DELAY_MS = 250; // brute-force brake on every failed login
+
+/**
+ * Constant-time PIN comparison: both sides are hashed to a fixed length first,
+ * so timingSafeEqual applies regardless of input length and neither the length
+ * nor the content of the configured PIN leaks through timing.
+ */
+function pinMatches(expected: string, given: string): boolean {
+  const a = createHash("sha256").update(expected).digest();
+  const b = createHash("sha256").update(given).digest();
+  return timingSafeEqual(a, b);
+}
+
+/** Extracts this app's session token from the Cookie header, if present. */
+function sessionTokenFrom(req: Request): string | null {
+  const header = req.headers.get("cookie");
+  if (header === null) return null;
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === SESSION_COOKIE) return part.slice(eq + 1).trim();
+  }
+  return null;
+}
+
 // ─── Server factory ──────────────────────────────────────────────────────────
+
+export interface ServerAccessOptions {
+  /** Bind hostname. Default 127.0.0.1 — loopback-only, the fail-safe default. */
+  hostname?: string;
+  /**
+   * Team PIN (RULING 2026-07-14b). Set → the session gate is active (even on
+   * loopback). Unset/blank → loopback dev behavior, exactly as before B0a.
+   */
+  pin?: string;
+}
 
 /**
  * Builds the HTTP API over an injected DB handle. Defaults to port 0 (ephemeral)
  * so tests can run in parallel and MUST call `server.stop(true)` on teardown.
+ *
+ * FAIL-SECURE (insecure-defaults): a non-loopback bind without a configured PIN
+ * throws BEFORE any socket opens — the server can never start exposed without
+ * the team PIN. A malformed PIN also refuses startup. Neither error ever
+ * contains the PIN value.
  */
-export function makeServer(db: Database, port = 0): Server {
+export function makeServer(db: Database, port = 0, access: ServerAccessOptions = {}): Server {
+  const hostname = access.hostname ?? "127.0.0.1";
+  const pin =
+    access.pin !== undefined && access.pin.trim() !== "" ? access.pin : null;
+
+  if (pin === null && !LOOPBACK_HOSTS.has(hostname)) {
+    throw new Error(
+      `CONSTRUCTOR_HOST=${hostname} is not loopback and CONSTRUCTOR_PIN is not configured — ` +
+        "refusing to start exposed without the team PIN. Set CONSTRUCTOR_PIN (4-12 digits) " +
+        "or unset CONSTRUCTOR_HOST (fail-secure, RULING 2026-07-14b).",
+    );
+  }
+  if (pin !== null && !isValidPinFormat(pin)) {
+    throw new Error(
+      "CONSTRUCTOR_PIN is malformed — it must be 4-12 digits. Refusing to start " +
+        "(fail-secure, RULING 2026-07-14b).",
+    );
+  }
+
+  // Session tokens live in memory only: minted by POST /login, valid for the
+  // process lifetime, all gone on restart (re-enter the PIN — acceptable for a
+  // 3-operator office LAN; no schema change, per the ruling's constraints).
+  const sessions = new Set<string>();
+
+  async function handleLogin(req: Request): Promise<Response> {
+    const body = await readBody(req);
+    const given = body["pin"];
+    if (typeof given !== "string" || pin === null) {
+      throw new ApiError(400, MSG.field("pin"));
+    }
+    if (!pinMatches(pin, given)) {
+      await Bun.sleep(WRONG_PIN_DELAY_MS); // same fixed delay for every wrong value
+      throw new ApiError(401, MSG.pinWrong);
+    }
+    const token = randomUUID(); // crypto-random, unrelated to the PIN
+    sessions.add(token);
+    return Response.json(
+      { ok: true },
+      {
+        status: 200,
+        headers: {
+          // HttpOnly: page JS never sees the token. SameSite=Strict: sent on
+          // same-site requests only. No Secure attribute: B0 is plain HTTP on
+          // the office LAN (TLS/hosting is B3 scope) — Secure would drop it.
+          "set-cookie": `${SESSION_COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/`,
+        },
+      },
+    );
+  }
+
   return Bun.serve({
     port,
-    hostname: "127.0.0.1",
+    hostname,
     async fetch(req) {
       const url = new URL(req.url);
       try {
-        switch (`${req.method} ${url.pathname}`) {
+        const route = `${req.method} ${url.pathname}`;
+        if (pin !== null) {
+          if (route === "POST /login") return await handleLogin(req);
+          const isShell = route === "GET /" || route === "GET /app.js";
+          if (!isShell) {
+            const token = sessionTokenFrom(req);
+            if (token === null || !sessions.has(token)) {
+              return jsonError(401, MSG.loginRequired);
+            }
+          }
+        }
+        switch (route) {
           case "POST /leads":
             return await handleLead(db, req);
           case "POST /viewings":
@@ -304,7 +418,15 @@ export function makeServer(db: Database, port = 0): Server {
 }
 
 // Dev entry point ONLY — nothing else may start a server on import.
+// B0a (RULING 2026-07-14b): bind host comes from CONSTRUCTOR_HOST (default
+// loopback — the fail-safe). The PIN comes ONLY from CONSTRUCTOR_PIN with NO
+// fallback (fail-secure — makeServer refuses a non-loopback bind without it).
+// PORT keeps its default: a local dev port is not a secret.
 if (import.meta.main) {
-  const server = makeServer(initDb(), Number(process.env.PORT ?? 3000));
-  console.log(`Constructor API listening on http://127.0.0.1:${server.port}`);
+  const server = makeServer(initDb(), Number(process.env.PORT ?? 3000), {
+    hostname: process.env.CONSTRUCTOR_HOST, // undefined → 127.0.0.1
+    pin: process.env.CONSTRUCTOR_PIN, // undefined → no gate (loopback dev only)
+  });
+  // Host/port only — never the PIN, never a session token.
+  console.log(`Constructor API listening on http://${server.hostname}:${server.port}`);
 }
