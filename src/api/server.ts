@@ -241,6 +241,37 @@ function handleCounters(db: Database, url: URL): Response {
 const INDEX_HTML = fileURLToPath(new URL("../web/index.html", import.meta.url));
 const APP_TSX = fileURLToPath(new URL("../web/App.tsx", import.meta.url));
 
+// B0c (RULING 2026-07-15) — installable home-screen web app: manifest + icons.
+// Same static-shell class as GET / and /app.js (ADR-0032): code/branding only,
+// never pipeline data, so these routes stay reachable pre-login (iOS fetches
+// the manifest and apple-touch-icon without the session cookie at install time).
+const PWA_ASSETS: Record<string, { file: string; contentType: string }> = {
+  "GET /manifest.webmanifest": {
+    file: fileURLToPath(new URL("../web/manifest.webmanifest", import.meta.url)),
+    contentType: "application/manifest+json; charset=utf-8",
+  },
+  "GET /icons/apple-touch-icon.png": {
+    file: fileURLToPath(new URL("../web/icons/apple-touch-icon.png", import.meta.url)),
+    contentType: "image/png",
+  },
+  "GET /icons/icon-192.png": {
+    file: fileURLToPath(new URL("../web/icons/icon-192.png", import.meta.url)),
+    contentType: "image/png",
+  },
+  "GET /icons/icon-512.png": {
+    file: fileURLToPath(new URL("../web/icons/icon-512.png", import.meta.url)),
+    contentType: "image/png",
+  },
+};
+
+function servePwaAsset(route: string): Response | null {
+  const asset = PWA_ASSETS[route];
+  if (asset === undefined) return null;
+  return new Response(Bun.file(asset.file), {
+    headers: { "content-type": asset.contentType },
+  });
+}
+
 let appBundleCache: Promise<string> | null = null;
 
 function appBundle(): Promise<string> {
@@ -380,7 +411,8 @@ export function makeServer(db: Database, port = 0, access: ServerAccessOptions =
         const route = `${req.method} ${url.pathname}`;
         if (pin !== null) {
           if (route === "POST /login") return await handleLogin(req);
-          const isShell = route === "GET /" || route === "GET /app.js";
+          const isShell =
+            route === "GET /" || route === "GET /app.js" || route in PWA_ASSETS;
           if (!isShell) {
             const token = sessionTokenFrom(req);
             if (token === null || !sessions.has(token)) {
@@ -408,7 +440,7 @@ export function makeServer(db: Database, port = 0, access: ServerAccessOptions =
           case "GET /app.js":
             return await serveAppJs();
           default:
-            return jsonError(404, MSG.notFoundRoute);
+            return servePwaAsset(route) ?? jsonError(404, MSG.notFoundRoute);
         }
       } catch (e) {
         return toErrorResponse(e);

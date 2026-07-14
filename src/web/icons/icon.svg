@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- B0c source mark: dark-navy full-bleed square (iOS masks its own corners),
+       geometric white "C" drawn as a stroked arc (font-independent, deterministic).
+       Rasterized once to the committed PNGs — see DECISIONS.md ADR-0034. -->
+  <rect width="512" height="512" fill="#111827"/>
+  <path d="M 355.6 156.4 A 140.9 140.9 0 1 0 355.6 355.6"
+        fill="none" stroke="#ffffff" stroke-width="54" stroke-linecap="round"/>
+</svg>

@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111827">
+  <!-- B0c (RULING 2026-07-15): installable home-screen web app — manifest +
+       apple-touch-icon + iOS standalone metas. status-bar-style "default": the
+       app chrome is light (#f4f4f5); black-translucent would overlay content. -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Constructor">
   <title>Constructor — Πωλήσεις</title>
   <style>
     /* Minimal base only — all component styling is inline in App.tsx (plan.md). */
