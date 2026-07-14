@@ -825,6 +825,29 @@ export function latestEventDay(db: Database, projectId: number): string | null {
   return row === null ? null : row.day;
 }
 
+export interface SeparationRow {
+  handledBy: string;
+  events: number;
+}
+
+/**
+ * T019 (SC-5): per-operator event counts from the v_separation view — the
+ * separation test proving handled_by attribution is queryable from day one.
+ * The view has no inherent order (GROUP BY), so a deterministic ORDER BY —
+ * busiest operator first, ties broken by name in byte order — keeps the
+ * separation report byte-stable across runs (Article III). Read-only, global
+ * across projects (the view aggregates ALL sales_events by design).
+ */
+export function separationCounts(db: Database): SeparationRow[] {
+  return db
+    .query<{ handled_by: string; events: number }, []>(
+      `SELECT handled_by, events FROM v_separation
+       ORDER BY events DESC, handled_by ASC`,
+    )
+    .all()
+    .map((row) => ({ handledBy: row.handled_by, events: Number(row.events) }));
+}
+
 /**
  * Per-project activity counters: event totals (kept even after an opportunity
  * closes — the work happened) + live-opportunity count (closed stages excluded,
