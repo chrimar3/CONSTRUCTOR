@@ -296,3 +296,12 @@ Copy the template, increment the ID, fill it in.
 - Reversibility: easy — one suffix helper + one conditional line, pinned by 5 new tests.
 - Article-safety: confirmed — III strengthened (still byte-deterministic), VI strengthened, others untouched.
 - Rail note: the commit-msg hook correctly blocked this commit (src/ change without TXXX prefix) — a gap for human-authorized post-task work; hook extended to accept a 'POLISH: ' prefix (TXXX state-location grep unaffected).
+
+### ADR-0031 — B0 dogfood prep: fail-closed daily backup + operator checklist
+- Date: 2026-07-14
+- Zone: YELLOW (operator-requested B0 prep; no Article touched)
+- Context: B0 needs the live constructor.db protected and the three operators instructed, with hosting/auth/deps explicitly out of scope.
+- Decision: scripts/backup-db.sh — sqlite3 .backup (WAL-safe snapshot), integrity_check before trusting it, gzip to ~/constructor-backups/ (outside the repo), 7-day rolling prune ONLY after a verified success; FAIL-CLOSED: missing DB or <40KB skips with a log line rather than rotating good backups against a suspect DB (the backup-amplifies-loss hazard). launchd com.constructor.backup daily 21:00, plist template committed, installed to ~/Library/LaunchAgents. Tested through launchctl start (not interactive shell): no-DB skip, tiny-DB skip, real backup, and a full restore (integrity ok + row count). CHECKLIST-B0.md (Greek) carries the daily/biweekly operator protocol + embedded friction log; it explicitly tells operators to keep buyer contact details in ilist (Article VII — no double entry; the prototype has no identity-capture UI by design).
+- Alternatives considered: cron (rejected: launchd is the platform's scheduler and the project's established pattern); backups inside the repo (rejected: gitignore risk + a repo clone shouldn't carry data).
+- Reversibility: easy — launchctl unload + delete plist/script.
+- Article-safety: confirmed — I (frictionless capture reinforced), IV (backups stay on the local machine; PII remains encrypted inside the DB file), VII (checklist routes contact details to ilist).
