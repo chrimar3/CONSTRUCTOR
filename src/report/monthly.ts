@@ -44,6 +44,17 @@ export interface MonthlyWindow {
 const DAY_MS = 86_400_000;
 const PERIOD_DAYS = 30;
 
+/**
+ * T017 — the quarterly report reuses this template over a 90-day tile (US-6
+ * groups monthly/quarterly on the same extended shape); only the period length
+ * and the title differ.
+ */
+export type ExtendedCadence = "monthly" | "quarterly";
+const CADENCES: Record<ExtendedCadence, { days: number; title: string }> = {
+  monthly: { days: PERIOD_DAYS, title: "Μηνιαία αναφορά προόδου πωλήσεων" },
+  quarterly: { days: 90, title: "Τριμηνιαία αναφορά προόδου πωλήσεων" },
+};
+
 /** Renders a UTC epoch-day timestamp back to "YYYY-MM-DD" (argful Date only). */
 function isoDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
@@ -66,20 +77,25 @@ function parseIsoDay(iso: string): number {
  * biweekly window (T014/ADR-0024): adjacent periods share exactly one boundary
  * string, so any event lands in exactly one period (FR-13).
  */
-export function monthlyWindow(asOf: string): MonthlyWindow {
+export function monthlyWindow(asOf: string, periodDays: number = PERIOD_DAYS): MonthlyWindow {
   const ms = parseIsoDay(asOf);
   return {
-    start: isoDay(ms - (PERIOD_DAYS - 1) * DAY_MS),
+    start: isoDay(ms - (periodDays - 1) * DAY_MS),
     end: isoDay(ms),
     endExclusive: isoDay(ms + DAY_MS),
   };
 }
 
-/** The fixed 30-day period immediately before `window` — adjacent, no gap/overlap. */
+/**
+ * The fixed period immediately before `window` — adjacent, no gap/overlap. The
+ * length is derived from the window itself, so 30-day and 90-day (T017
+ * quarterly) tiles both pair with their equally-long predecessor.
+ */
 export function previousWindow(window: MonthlyWindow): MonthlyWindow {
   const startMs = parseIsoDay(window.start);
+  const lengthMs = parseIsoDay(window.endExclusive) - startMs;
   return {
-    start: isoDay(startMs - PERIOD_DAYS * DAY_MS),
+    start: isoDay(startMs - lengthMs),
     end: isoDay(startMs - DAY_MS),
     endExclusive: window.start,
   };
@@ -127,10 +143,13 @@ export interface MonthlyReportOptions {
   projectId: number;
   /** Injected reference date (ISO) — never read from the wall clock (Article III). */
   asOf: string;
+  /** T017 — "monthly" (30-day tile, default) or "quarterly" (90-day tile, US-6). */
+  cadence?: ExtendedCadence;
 }
 
 export function monthlyReport(db: Database, options: MonthlyReportOptions): string {
-  const window = monthlyWindow(options.asOf);
+  const { days: periodDays, title } = CADENCES[options.cadence ?? "monthly"];
+  const window = monthlyWindow(options.asOf, periodDays);
   const prev = previousWindow(window);
   const project = getProject(db, options.projectId);
   if (project === null) {
@@ -152,12 +171,12 @@ export function monthlyReport(db: Database, options: MonthlyReportOptions): stri
   const lines: string[] = [];
 
   // ── Header (Article V: micro-area precision always) ──
-  lines.push(`# Μηνιαία αναφορά προόδου πωλήσεων — ${project.projectName}`);
+  lines.push(`# ${title} — ${project.projectName}`);
   lines.push("");
   lines.push(`**Κατασκευαστής:** ${project.builderName}`);
   lines.push(`**Τοποθεσία:** ${project.microArea}`);
   lines.push(
-    `**Περίοδος αναφοράς:** ${greekDate(window.start)} – ${greekDate(window.end)} (${PERIOD_DAYS} ημέρες)`,
+    `**Περίοδος αναφοράς:** ${greekDate(window.start)} – ${greekDate(window.end)} (${periodDays} ημέρες)`,
   );
   lines.push("");
 

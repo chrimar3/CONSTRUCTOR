@@ -139,6 +139,14 @@ export interface ProjectSummary {
   microArea: string;
 }
 
+/** T017 — name-resolved project reference for the report CLI (incl. the default anchor). */
+export interface ProjectRef {
+  id: number;
+  builderName: string;
+  projectName: string;
+  listedAt: string;
+}
+
 export interface UnitOption {
   id: number;
   unitCode: string;
@@ -760,6 +768,61 @@ export function liveUnitCount(db: Database, projectId: number): number {
     )
     .get(projectId)!;
   return Number(row.n);
+}
+
+/**
+ * T017: name-addressed project resolution for the report CLI (read-only). The
+ * operator addresses a project as builder name + project name; ties (same name
+ * twice under one builder) resolve deterministically to the lowest id.
+ */
+export function findProject(
+  db: Database,
+  builderName: string,
+  projectName: string,
+): ProjectRef | null {
+  return db
+    .query<ProjectRef, [string, string]>(
+      `SELECT id           AS id,
+              builder_name AS builderName,
+              project_name AS projectName,
+              listed_at    AS listedAt
+       FROM projects
+       WHERE builder_name = ? AND project_name = ?
+       ORDER BY id ASC
+       LIMIT 1`,
+    )
+    .get(builderName, projectName);
+}
+
+/** T017: does any project exist for this builder? (distinguishes the two Greek CLI errors) */
+export function builderExists(db: Database, builderName: string): boolean {
+  return (
+    db
+      .query<{ one: number }, [string]>(
+        "SELECT 1 AS one FROM projects WHERE builder_name = ? LIMIT 1",
+      )
+      .get(builderName) !== null
+  );
+}
+
+/**
+ * T017: the most recent event DAY ("YYYY-MM-DD") recorded for a project, or null
+ * when it has no events. This is the CLI's data-derived default as-of — Article
+ * III forbids the wall clock anywhere in the report path, so "run it today"
+ * defaults to the day of the latest recorded activity. MAX over full strings
+ * first (date-only sorts before same-day timestamps, harmless for the day), then
+ * substr to the day at the SQL layer.
+ */
+export function latestEventDay(db: Database, projectId: number): string | null {
+  const row = db
+    .query<{ day: string | null }, [number]>(
+      `SELECT MAX(substr(e.event_date, 1, 10)) AS day
+       FROM sales_events e
+       JOIN opportunities o ON o.id = e.opportunity_id
+       WHERE o.project_id = ?`,
+    )
+    .get(projectId);
+  return row === null ? null : row.day;
 }
 
 /**
