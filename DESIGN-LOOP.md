@@ -67,6 +67,31 @@ Mechanical gates are pass/fail. A failing gate blocks the round from even reachi
 5. **Human veto is final**: a round can beat every number and still be rejected at the
    visual checkpoint. Numbers converge; Christos decides.
 
+## Judge isolation (validity guarantees — structural, then audited)
+
+Judges and implementers are **disjoint, memoryless agent processes**. Beyond that:
+
+1. **Evidence-only input.** A judge receives exactly: the rubric (verbatim from this file)
+   + the screenshot deck + the two reference anchors. It is instructed to open NOTHING
+   else — no repo files, no git log, no DECISIONS.md — and its transcript is audited
+   after each round to prove it (the same tool-call audit used for skill compliance;
+   a judge that peeked is discarded and replaced, its score excluded).
+2. **Neutral, shuffled decks.** Frames are copied to neutral ids (frame-a.jpeg …) in a
+   different random order per judge — filenames can't whisper "after" or "board-v2",
+   and position effects wash out across the panel.
+3. **Pinned prompt, no per-round framing.** The judge prompt is fixed in this file and
+   may not be edited between rounds (editing it = a ruling). The orchestrator physically
+   cannot add "we just improved the cards, please score" — the prompt has no slot for it.
+4. **Fresh panel every round.** No judge instance ever scores twice; there is no memory
+   of prior rounds to anchor on. The control frame catches panel-level drift anyway.
+5. **Different lens per judge.** The three judges score the same rubric but each is
+   assigned a distinct persona (field-operator pragmatist · brand/typography critic ·
+   builder-client) — diversity of failure modes beats three identical opinions, and the
+   median absorbs any one persona's bias.
+6. **Implementer blindness.** Elevation-round agents get the previous round's SCORES
+   (they must know what to fix) but never the judges' prose, personas, or identities —
+   no writing-to-the-grader.
+
 ## THE LOOP
 
 ```
