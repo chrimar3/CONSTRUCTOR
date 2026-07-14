@@ -305,3 +305,8 @@ Copy the template, increment the ID, fill it in.
 - Alternatives considered: cron (rejected: launchd is the platform's scheduler and the project's established pattern); backups inside the repo (rejected: gitignore risk + a repo clone shouldn't carry data).
 - Reversibility: easy — launchctl unload + delete plist/script.
 - Article-safety: confirmed — I (frictionless capture reinforced), IV (backups stay on the local machine; PII remains encrypted inside the DB file), VII (checklist routes contact details to ilist).
+
+### RULING 2026-07-14b — B0 access: office-LAN + team PIN; builders get sent HTML (human-decided)
+- Context: operators need phone access for entries; builders need the presented outcome. Server hard-binds 127.0.0.1; any exposure change was RED.
+- Ruling (Christos): (a) office-Wi-Fi LAN binding behind an env opt-in + a simple team PIN — the spec's sanctioned "simple team login"; NO third-party services, €0, nothing installed on phones. Field access deliberately deferred: the B0 friction log decides whether Tailscale (free) or B3 hosting follows — evidence, not guess. (b) Builders receive a styled self-contained HTML report file (--html, plan-sanctioned "Markdown → optional HTML") sent by email/Viber — no client accounts/portal (that is B3/B4 scope).
+- Constraints binding the implementation: default bind stays 127.0.0.1 (fail-safe); non-loopback bind without a PIN configured must CRASH naming the var (fail-secure, insecure-defaults); PIN never logged; schema untouched; zero new dependencies.
