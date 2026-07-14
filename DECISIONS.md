@@ -226,3 +226,6 @@ Copy the template, increment the ID, fill it in.
 
 ### CHECKPOINT-1 NOTE 2026-07-13 — RULING 2026-07-13b APPROVED by human
 - The operator-session Gate 6c scope correction (capture-writes only + anti-vacuous guard) was reviewed and approved by Christos before CHECKPOINT 1 presentation. The flag is closed; the scoped gate is now the standing rule.
+
+### CHECKPOINT-1 APPROVED 2026-07-14 — human sign-off
+- Phase 1 (T007–T013) approved by Christos: audit PASS, 194/0 tests, all gates green, seeded board + capture loop verified. Phase 2 (reporting, T014–T019) authorized.
