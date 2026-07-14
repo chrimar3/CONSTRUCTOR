@@ -29,6 +29,7 @@ import {
   unitActivityInWindow,
 } from "../db/queries";
 import { compsForMicroArea, type CompRow } from "../db/comps";
+import { dataThroughSuffix } from "./biweekly";
 
 // ─── Window computation (FR-13: fixed 30-day periods, half-open, injected as-of) ─
 
@@ -145,6 +146,8 @@ export interface MonthlyReportOptions {
   asOf: string;
   /** T017 — "monthly" (30-day tile, default) or "quarterly" (90-day tile, US-6). */
   cadence?: ExtendedCadence;
+  /** Data cutoff (real as-of) when the fixed tile extends past it — display-only suffix. */
+  dataThrough?: string;
 }
 
 export function monthlyReport(db: Database, options: MonthlyReportOptions): string {
@@ -176,7 +179,7 @@ export function monthlyReport(db: Database, options: MonthlyReportOptions): stri
   lines.push(`**Κατασκευαστής:** ${project.builderName}`);
   lines.push(`**Τοποθεσία:** ${project.microArea}`);
   lines.push(
-    `**Περίοδος αναφοράς:** ${greekDate(window.start)} – ${greekDate(window.end)} (${periodDays} ημέρες)`,
+    `**Περίοδος αναφοράς:** ${greekDate(window.start)} – ${greekDate(window.end)} (${periodDays} ημέρες)${dataThroughSuffix(window.end, options.dataThrough)}`,
   );
   lines.push("");
 
@@ -208,9 +211,11 @@ export function monthlyReport(db: Database, options: MonthlyReportOptions): stri
     [eventTypeLabel("offer"), totals.offers, prevTotals.offers],
   ];
   let trendHasBadFigure = false;
+  const declined: string[] = [];
   for (const [caption, current, previous] of trendRows) {
     const delta = current - previous;
     if (current <= 0 || previous <= 0 || delta <= 0) trendHasBadFigure = true;
+    if (delta < 0) declined.push(caption);
     lines.push(
       `- ${caption}: ${current} (προηγούμενη περίοδος: ${previous}, μεταβολή: ${signedDelta(delta)})`,
     );
@@ -219,6 +224,13 @@ export function monthlyReport(db: Database, options: MonthlyReportOptions): stri
     // Article VI: zero counts / non-positive deltas pair with the period's
     // data-derived recommendation in the SAME block (ADR-0025 adjacency).
     lines.push("");
+    if (declined.length > 0) {
+      // A declining metric gets a note that NAMES it, so an offer-driven "hold"
+      // never reads as complacency about the drop (CHECKPOINT-2 audit nit).
+      lines.push(
+        `**Σύσταση (τάση):** Μείωση σε ${declined.join(", ")} έναντι της προηγούμενης περιόδου — προτείνεται στοχευμένη ενίσχυση των καναλιών προβολής και επανέλεγχος στην επόμενη αναφορά.`,
+      );
+    }
     lines.push(`**Σύσταση:** ${projectRecommendation}`);
   }
   lines.push("");

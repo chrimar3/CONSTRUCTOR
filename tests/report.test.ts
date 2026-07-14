@@ -364,3 +364,26 @@ describe("Article III: deterministic report — same DB + same args ⇒ byte-ide
     expect(src).not.toMatch(/toLocaleString|Intl\./);
   });
 });
+
+describe("polish 2026-07-14: future-tile transparency (dataThrough)", () => {
+  test("when the fixed tile extends past the data cutoff, the header carries 'στοιχεία έως'", () => {
+    // Tile ends 2026-08-01 but data only runs to 2026-07-14.
+    const md = biweeklyReport(db, {
+      projectId: projectId("Ρετιρέ Κύπρου"),
+      asOf: "2026-08-01",
+      dataThrough: "2026-07-14",
+    });
+    expect(md).toContain("στοιχεία έως 14.07.2026");
+  });
+
+  test("no suffix when dataThrough is absent or not before the window end", () => {
+    const plain = biweeklyReport(db, { projectId: projectId("Ρετιρέ Κύπρου"), asOf: AS_OF });
+    expect(plain).not.toContain("στοιχεία έως");
+    const capped = biweeklyReport(db, {
+      projectId: projectId("Ρετιρέ Κύπρου"),
+      asOf: AS_OF,
+      dataThrough: AS_OF,
+    });
+    expect(capped).not.toContain("στοιχεία έως");
+  });
+});

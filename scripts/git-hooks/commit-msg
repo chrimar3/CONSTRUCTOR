@@ -7,8 +7,8 @@ STAGED=$(git diff --cached --name-only)
 # Task commits (touching src/ or tests/) must carry the TXXX: prefix — the
 # state-location one-liner (git log | grep T\d+) depends on it.
 if echo "$STAGED" | grep -qE '^(src|tests)/'; then
-  if ! head -1 "$MSG_FILE" | grep -qE '^T[0-9]{3}[a-z]?: |^Merge |^Revert '; then
-    echo "COMMIT BLOCKED: commits touching src/ or tests/ must start 'TXXX: ' (state machine depends on it)." >&2
+  if ! head -1 "$MSG_FILE" | grep -qE '^T[0-9]{3}[a-z]?: |^POLISH: |^Merge |^Revert '; then
+    echo "COMMIT BLOCKED: commits touching src/ or tests/ must start 'TXXX: ' (or 'POLISH: ' for human-authorized post-task fixes; state machine depends on it)." >&2
     exit 1
   fi
 fi

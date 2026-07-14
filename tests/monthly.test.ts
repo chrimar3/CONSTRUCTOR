@@ -572,3 +572,29 @@ describe("Article III: deterministic monthly report", () => {
     expect(src).not.toMatch(/toLocaleString|Intl\./);
   });
 });
+
+describe("polish 2026-07-14: trend decline note + dataThrough", () => {
+  test("a declining metric gets a targeted 'Σύσταση (τάση)' note naming it, alongside the verbatim project recommendation", () => {
+    // asOf far past the data: current window has 0 events, previous has many →
+    // all three metrics decline.
+    const md = monthlyReport(db, { projectId: projectId("Ρετιρέ Κύπρου"), asOf: "2026-08-20" });
+    expect(md).toContain("**Σύσταση (τάση):** Μείωση σε");
+    expect(md).toContain("Εκδήλωση ενδιαφέροντος");
+    // The verbatim Article VI pairing line is still present in the trend block.
+    expect(md).toContain("**Σύσταση:**");
+  });
+
+  test("no decline note when all deltas are non-negative", () => {
+    const md = monthlyReport(db, { projectId: projectId("Ρετιρέ Κύπρου"), asOf: AS_OF });
+    expect(md).not.toContain("Σύσταση (τάση)");
+  });
+
+  test("header carries 'στοιχεία έως' when the tile end is past the data cutoff", () => {
+    const md = monthlyReport(db, {
+      projectId: projectId("Ρετιρέ Κύπρου"),
+      asOf: "2026-08-01",
+      dataThrough: "2026-07-14",
+    });
+    expect(md).toContain("στοιχεία έως 14.07.2026");
+  });
+});

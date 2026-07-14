@@ -80,6 +80,15 @@ export interface BiweeklyReportOptions {
   projectId: number;
   /** Injected reference date (ISO) — never read from the wall clock (Article III). */
   asOf: string;
+  /** Data cutoff (real as-of) when the fixed tile extends past it — display-only suffix. */
+  dataThrough?: string;
+}
+
+/** "· στοιχεία έως D" suffix when the tile's end is past the data cutoff (display only). */
+export function dataThroughSuffix(windowEnd: string, dataThrough?: string): string {
+  return dataThrough !== undefined && dataThrough < windowEnd
+    ? ` · στοιχεία έως ${greekDate(dataThrough)}`
+    : "";
 }
 
 export function biweeklyReport(db: Database, options: BiweeklyReportOptions): string {
@@ -100,7 +109,7 @@ export function biweeklyReport(db: Database, options: BiweeklyReportOptions): st
   lines.push(`**Κατασκευαστής:** ${project.builderName}`);
   lines.push(`**Τοποθεσία:** ${project.microArea}`);
   lines.push(
-    `**Περίοδος αναφοράς:** ${greekDate(window.start)} – ${greekDate(window.end)} (14 ημέρες)`,
+    `**Περίοδος αναφοράς:** ${greekDate(window.start)} – ${greekDate(window.end)} (14 ημέρες)${dataThroughSuffix(window.end, options.dataThrough)}`,
   );
   lines.push("");
 

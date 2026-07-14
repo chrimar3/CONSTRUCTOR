@@ -149,13 +149,22 @@ export function renderReport(db: Database, flags: ReportFlags): string {
     });
   }
 
+  // Display-only transparency: when the fixed tile runs past the DATA horizon,
+  // the header notes the cutoff. Derived from latestEventDay, NOT the requested
+  // as-of, so any as-of inside one tile stays byte-identical (ADR-0027 pin) and
+  // the note reflects the actual data, not the invocation.
+  const dataDay = latestEventDay(db, project.id);
+  const dataThrough =
+    flags.rolling === true || dataDay === null || dataDay >= effectiveAsOf ? undefined : dataDay;
+
   if (flags.period === "biweekly") {
-    return biweeklyReport(db, { projectId: project.id, asOf: effectiveAsOf });
+    return biweeklyReport(db, { projectId: project.id, asOf: effectiveAsOf, dataThrough });
   }
   return monthlyReport(db, {
     projectId: project.id,
     asOf: effectiveAsOf,
     cadence: flags.period,
+    dataThrough,
   });
 }
 
