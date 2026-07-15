@@ -16,10 +16,13 @@ export const SEED_LEVERS: Lever[] = [
     allScreens: true,
     affects: [
       { dimension: "warmth", gain: 6 }, // raises cap_warmth 3→9; the headline lever
-      { dimension: "typography", gain: 2 },
-      { dimension: "hierarchy", gain: 1 },
+      { dimension: "typography", gain: 2 }, // owns the pinned type scale — cap_typography 3→9
     ],
-    note: "Introduces CSS custom properties for the token set; every component styles through them. Closes the palette + type objective gates simultaneously.",
+    // NOT hierarchy: cap_hierarchy is contrast-driven (see contrast-aa), so crediting it
+    // here would double-count Lever "contrast-aa" (research finding, 2026-07-15). The type
+    // scale is folded into the token definitions, so it also absorbs the scale part of the
+    // "type-scale-snap" lever below — which is why that lever collapses to tabular-nums only.
+    note: "Introduces CSS custom properties for the token set; every component styles through them. Closes the palette + type objective gates simultaneously (bake the pinned scale + AA-valid pine/honey pairs into the token values from the start).",
   },
   {
     id: "info-complete-entry",
@@ -44,13 +47,17 @@ export const SEED_LEVERS: Lever[] = [
     note: "Raises cap_hierarchy toward 10; closes the contrast objective gate. Mechanical, low-risk.",
   },
   {
-    id: "type-scale-snap",
-    title: "Snap all font sizes to the pinned scale {13,15,17,20,24} + tabular money",
+    id: "tabular-numerals",
+    title: "Tabular numerals on money + counts (the type scale itself is folded into the token layer)",
     zone: "GREEN",
-    effort: 2,
+    effort: 1,
     allScreens: true,
-    affects: [{ dimension: "typography", gain: 2 }],
-    note: "Closes the type-discipline objective gate; complements the token layer.",
+    // The pinned scale is defined by the token layer (tokens-pinemeli), so only the
+    // non-overlapping remnant remains here: tabular figures so € amounts and counts
+    // align as data. Small but real for a money CRM. Headroom largely collapses once
+    // the token layer lands — the loop's re-measure self-corrects this (research, 2026-07-15).
+    affects: [{ dimension: "typography", gain: 0.5 }],
+    note: "Fast follow-up after the token layer: font-variant-numeric: tabular-nums on every €/count element.",
   },
   {
     id: "honey-signal",

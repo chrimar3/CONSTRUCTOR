@@ -168,11 +168,13 @@ EXIT        T3 reached (§3) OR plateau → human review of the rubric itself.
 
 By the formula the likely top lever is a **«Πεύκο & Μέλι» design-token layer** (CSS custom
 properties for palette/type/space, applied across all 8 screens): it raises `cap_warmth`
-from 3→9 across every screen (15 % weight × 8 screens × large headroom), lifts typography
-and hierarchy caps, and closes the palette + type objective gates simultaneously — the
-textbook highest-leverage move. Second likely: information completeness on the weak
-PIN/operator screens (20 % weight, currently ~3). The loop recomputes this from the live
-benchmark rather than presuming it.
+from 3→9 across every screen (15 % weight × 8 screens × large headroom) and lifts the
+`cap_typography` cap by defining the pinned type scale, closing the palette + type objective
+gates simultaneously — the textbook highest-leverage move. (It does **not** by itself lift
+`cap_hierarchy`, which is contrast-driven — that belongs to the contrast lever; crediting it
+here would double-count. Correction confirmed by the Round-1 research pass, 2026-07-15.)
+Second likely: information completeness on the weak PIN/operator screens (20 % weight,
+currently ~3). The loop recomputes this from the live benchmark rather than presuming it.
 
 ## 9. Open items (ratified at first calibrated run)
 
