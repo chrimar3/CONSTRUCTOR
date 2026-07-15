@@ -26,7 +26,7 @@ const rows = screens
   .map((s) => {
     const v = bench.perScreen[s];
     const dimCells = DIMS.map((d) => `<td class="s ${tone(v.dims[d])}">${v.dims[d]}</td>`).join("");
-    return `<tr><th scope="row">${s}</th>${dimCells}<td class="s comp ${tone(v.composite)}">${v.composite}</td><td class="s panel">${v.sComposite}</td><td class="s drift${v.driftFlagged ? " flag" : ""}">${v.drift > 0 ? "−" : ""}${Math.abs(v.drift)}</td></tr>`;
+    return `<tr><th scope="row">${s}</th>${dimCells}<td class="s comp ${tone(v.composite)}">${v.composite}</td><td class="s panel">${v.sComposite}</td><td class="s drift${v.driftFlagged ? " flag" : ""}">${v.drift >= 0 ? "+" : "−"}${Math.abs(v.drift)}</td></tr>`;
   })
   .join("");
 
@@ -103,7 +103,7 @@ footer b{color:var(--ink)}
 
   <section>
     <h2>Per-screen — honest vs raw panel (drift made visible)</h2>
-    <p class="lead">Each dimension is the panel's median <em>capped by objective reality</em> and blended with it. <b>Honest</b> = the composite that counts; <b>Panel</b> = the raw uncapped panel; <b>Drift</b> = how far the panel floated above the facts.</p>
+    <p class="lead">Each dimension is the panel's median <em>capped by objective reality</em> and blended with it. <b>Honest</b> = the composite that counts; <b>Panel</b> = the raw uncapped panel; <b>Drift</b> = panel − honest (negative = the objective facts exceed the panel's read, i.e. no upward drift).</p>
     <div class="tablewrap"><table>
       <thead><tr><th>Screen</th>${DIMS.map((d) => `<th>${DIM_L[d]}</th>`).join("")}<th>Honest</th><th>Panel</th><th>Drift</th></tr></thead>
       <tbody>${rows}</tbody>
