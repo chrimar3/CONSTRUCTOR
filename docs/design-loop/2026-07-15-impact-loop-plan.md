@@ -22,6 +22,28 @@
 
 ---
 
+## Progress (live — updated 2026-07-15)
+
+Executed inline on branch `design-loop/round-0`; every task TDD'd, gates green (431 tests), one commit each.
+
+| Task | Status | Commit | Evidence |
+|---|---|---|---|
+| 1 · palette tokens + checkers | ✅ done | `1c7be9b` | 13 pins |
+| 2+3 · impact-model + honest benchmark | ✅ done | `5927d9c` | pins; **6.29→5.84**, board warmth 8→2.94 on real data |
+| 4 · objective-scorer | ✅ done | `74fddec` | mutation-verified pins |
+| 5 · tier ladder T0–T3 | ✅ done | `8c611f5` | 5 pins |
+| 6 · round CLI + lever catalog | ✅ done | `a8c1d39` | tokens ranked #1 (10.61 vs 2.40) |
+| 7 · reference ladder + calibration | ✅ done | `b13f23b` | 4 pins |
+| 8 · panel v2 (ladder + de-shuffle) | ✅ done | `5d35ce8` | pins |
+| 9 · dynamic Workflow + bridge CLIs + ADR-0036 | ✅ done | `956854c` | JS loads; run in Task 12 |
+| 10 · `IMPACT-LOOP.md` + supersession pointer | ✅ done | `a37dd2a` | — |
+| 11 · round artifact builder | ✅ done | `0b0b4f9` | renders 11 KB HTML |
+| 12 · run the loop once | ⏳ in progress | — | Workflow `wf_359429bd-57f` running |
+
+The per-step `- [ ]` checkboxes below are left as authored for reference; this table is the authoritative status.
+
+---
+
 ## Task 1: «Πεύκο & Μέλι» tokens + pure gate checkers — DONE (committed, Round 0)
 
 **Files:** `scripts/design/palette.ts`, `scripts/design/palette.test.ts`
