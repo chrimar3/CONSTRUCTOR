@@ -74,9 +74,9 @@ const BUDGET_KEYS = ["<150k", "150-250k", "250-400k", "400k+"];
 const INTEREST_KEYS = [1, 2, 3, 4, 5];
 
 const TEMP_COLOR: Record<string, string> = {
-  hot: "#dc2626",
-  warm: "#d97706",
-  cold: "#2563eb",
+  hot: "var(--hot)",
+  warm: "var(--warm)",
+  cold: "var(--cold)",
 };
 
 const NEXT_ACTION_SUGGESTIONS: Record<"lead" | "viewing" | "offer", string[]> = {
@@ -154,34 +154,36 @@ const S = {
   } as const,
   sectionLabel: {
     fontSize: 13,
-    fontWeight: 600,
-    color: "#6b7280",
+    fontWeight: 700,
+    color: "var(--pine)",
     textTransform: "uppercase" as const,
-    letterSpacing: 0.4,
+    letterSpacing: 0.6,
     margin: "0 0 8px 2px",
   },
-  gridBtn: (selected: boolean, disabled = false, color = "#111827") =>
+  gridBtn: (selected: boolean, disabled = false, color = "var(--pine)") =>
     ({
       minHeight: 48,
       padding: "10px 12px",
       borderRadius: 12,
-      border: `1.5px solid ${selected ? color : "#d1d5db"}`,
-      background: selected ? color : "#ffffff",
-      color: selected ? "#ffffff" : "#111827",
+      border: `1.5px solid ${selected ? color : "var(--line-strong)"}`,
+      background: selected ? color : "var(--card)",
+      color: selected ? "var(--on-pine)" : "var(--ink)",
       fontSize: 15,
       fontWeight: 600,
       opacity: disabled ? 0.35 : 1,
       textAlign: "center" as const,
       cursor: "pointer",
+      transition: "border-color var(--dur) ease, background var(--dur) ease",
     }) as const,
   input: {
     width: "100%",
     minHeight: 48,
     padding: "12px 14px",
     borderRadius: 12,
-    border: "1.5px solid #d1d5db",
-    background: "#ffffff",
-    fontSize: 16,
+    border: "1.5px solid var(--line-strong)",
+    background: "var(--card)",
+    color: "var(--ink)",
+    fontSize: 17,
   } as const,
   submit: (enabled: boolean) =>
     ({
@@ -189,11 +191,12 @@ const S = {
       minHeight: 56,
       borderRadius: 14,
       border: "none",
-      background: enabled ? "#111827" : "#d1d5db",
-      color: "#ffffff",
+      background: enabled ? "var(--pine)" : "var(--line-strong)",
+      color: enabled ? "var(--on-pine)" : "var(--ink-muted)",
       fontSize: 17,
       fontWeight: 700,
       cursor: enabled ? "pointer" : "default",
+      transition: "background var(--dur) ease, color var(--dur) ease",
     }) as const,
 };
 
@@ -204,7 +207,7 @@ function Field(props: { label: string; required?: boolean; children: React.React
     <div style={{ marginBottom: 20 }}>
       <div style={S.sectionLabel}>
         {props.label}
-        {props.required ? <span style={{ color: "#dc2626" }}> *</span> : null}
+        {props.required ? <span style={{ color: "var(--danger)" }}> *</span> : null}
       </div>
       {props.children}
     </div>
@@ -240,16 +243,16 @@ function OptionGrid(props: {
             onClick={() =>
               props.onChange(selected && props.allowClear ? null : o.key)
             }
-            style={S.gridBtn(selected, o.disabled, o.color ?? "#111827")}
+            style={S.gridBtn(selected, o.disabled, o.color ?? "var(--pine)")}
           >
             <div>{o.label}</div>
             {o.hint ? (
               <div
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 500,
                   marginTop: 2,
-                  color: selected ? "#e5e7eb" : "#6b7280",
+                  color: selected ? "var(--line)" : "var(--ink-muted)",
                 }}
               >
                 {o.hint}
@@ -280,10 +283,10 @@ function NextActionField(props: {
               minHeight: 44,
               padding: "8px 14px",
               borderRadius: 22,
-              border: `1.5px solid ${props.value === s ? "#111827" : "#d1d5db"}`,
-              background: props.value === s ? "#111827" : "#ffffff",
-              color: props.value === s ? "#ffffff" : "#374151",
-              fontSize: 14,
+              border: `1.5px solid ${props.value === s ? "var(--pine)" : "var(--line-strong)"}`,
+              background: props.value === s ? "var(--pine)" : "var(--card)",
+              color: props.value === s ? "var(--on-pine)" : "var(--ink)",
+              fontSize: 15,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -318,7 +321,7 @@ function Sheet(props: {
       style={{
         position: "fixed",
         inset: 0,
-        background: "#f4f4f5",
+        background: "var(--paper)",
         overflowY: "auto",
         zIndex: 20,
       }}
@@ -332,7 +335,7 @@ function Sheet(props: {
             padding: "14px 0 18px",
             position: "sticky",
             top: 0,
-            background: "#f4f4f5",
+            background: "var(--paper)",
             zIndex: 5,
           }}
         >
@@ -359,12 +362,12 @@ function Sheet(props: {
         {props.error ? (
           <div
             style={{
-              background: "#fef2f2",
-              border: "1.5px solid #fca5a5",
-              color: "#b91c1c",
+              background: "var(--hot-bg)",
+              border: "1.5px solid var(--hot)",
+              color: "var(--danger)",
               borderRadius: 12,
               padding: "12px 14px",
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: 600,
               marginBottom: 12,
             }}
@@ -380,8 +383,8 @@ function Sheet(props: {
           left: 0,
           right: 0,
           padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
-          background: "rgba(244,244,245,0.96)",
-          borderTop: "1px solid #e5e7eb",
+          background: "rgba(247,243,234,0.96)",
+          borderTop: "1px solid var(--line)",
         }}
       >
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
@@ -457,13 +460,13 @@ function PinGate(props: { onSuccess: () => void }) {
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "#f4f4f5", overflowY: "auto", zIndex: 50 }}
+      style={{ position: "fixed", inset: 0, background: "var(--paper)", overflowY: "auto", zIndex: 50 }}
     >
       <div style={{ ...S.page, padding: "0 16px 40px" }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, margin: "48px 0 8px", textAlign: "center" }}>
           Κωδικός ομάδας
         </h1>
-        <p style={{ textAlign: "center", color: "#6b7280", fontSize: 14, margin: "0 0 24px" }}>
+        <p style={{ textAlign: "center", color: "var(--ink-muted)", fontSize: 15, margin: "0 0 24px" }}>
           Βάλε το PIN της ομάδας για να συνεχίσεις.
         </p>
         <input
@@ -491,9 +494,9 @@ function PinGate(props: { onSuccess: () => void }) {
           <div
             style={{
               marginTop: 12,
-              color: "#b91c1c",
+              color: "var(--danger)",
               fontWeight: 600,
-              fontSize: 14,
+              fontSize: 15,
               textAlign: "center",
             }}
           >
@@ -526,7 +529,7 @@ function OperatorGate(props: {
 }) {
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "#f4f4f5", overflowY: "auto", zIndex: 40 }}
+      style={{ position: "fixed", inset: 0, background: "var(--paper)", overflowY: "auto", zIndex: 40 }}
     >
       <div style={{ ...S.page, padding: "0 16px 40px" }}>
         {props.current !== null ? (
@@ -559,7 +562,7 @@ function OperatorGate(props: {
               key={o}
               type="button"
               onClick={() => props.onPick(o)}
-              style={{ ...S.gridBtn(props.current === o), minHeight: 64, fontSize: 18 }}
+              style={{ ...S.gridBtn(props.current === o), minHeight: 64, fontSize: 17 }}
             >
               {o}
             </button>
@@ -740,7 +743,7 @@ function ViewingSheet(props: SheetProps) {
             onChange={(k) => setBuyerId(k as number | null)}
           />
         ) : (
-          <div style={{ fontSize: 14, color: "#6b7280" }}>
+          <div style={{ fontSize: 15, color: "var(--ink-muted)" }}>
             Δεν υπάρχουν ενεργοί αγοραστές — καταχώρισε πρώτα ενδιαφερόμενο.
           </div>
         )}
@@ -770,9 +773,9 @@ function ViewingSheet(props: SheetProps) {
                   flex: 1,
                   minHeight: 56,
                   borderRadius: 12,
-                  border: `1.5px solid ${selected ? TEMP_COLOR[t] : "#d1d5db"}`,
-                  background: selected ? TEMP_COLOR[t] : "#ffffff",
-                  color: selected ? "#ffffff" : TEMP_COLOR[t],
+                  border: `1.5px solid ${selected ? TEMP_COLOR[t] : "var(--line-strong)"}`,
+                  background: selected ? TEMP_COLOR[t] : "var(--card)",
+                  color: selected ? "var(--on-pine)" : TEMP_COLOR[t],
                   fontSize: 20,
                   fontWeight: 800,
                   cursor: "pointer",
@@ -784,7 +787,7 @@ function ViewingSheet(props: SheetProps) {
           })}
         </div>
         {interest !== null ? (
-          <div style={{ marginTop: 8, fontSize: 14, fontWeight: 600, color: TEMP_COLOR[temperature(interest)] }}>
+          <div style={{ marginTop: 8, fontSize: 15, fontWeight: 600, color: TEMP_COLOR[temperature(interest)] }}>
             {temperatureLabel(temperature(interest))} αγοραστής
           </div>
         ) : null}
@@ -868,7 +871,7 @@ function OfferSheet(props: SheetProps) {
             onChange={(k) => setBuyerId(k as number | null)}
           />
         ) : (
-          <div style={{ fontSize: 14, color: "#6b7280" }}>
+          <div style={{ fontSize: 15, color: "var(--ink-muted)" }}>
             Δεν υπάρχουν ενεργοί αγοραστές — καταχώρισε πρώτα ενδιαφερόμενο.
           </div>
         )}
@@ -893,7 +896,7 @@ function OfferSheet(props: SheetProps) {
           placeholder="π.χ. 250.000"
         />
         {parsed !== null ? (
-          <div style={{ marginTop: 6, fontSize: 14, fontWeight: 600, color: "#374151" }}>
+          <div style={{ marginTop: 6, fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
             = {formatEuro(parsed)}
           </div>
         ) : null}
@@ -901,17 +904,17 @@ function OfferSheet(props: SheetProps) {
       {preview !== null && effectiveUnit !== null ? (
         <div
           style={{
-            background: "#eff6ff",
-            border: "1.5px solid #bfdbfe",
+            background: "var(--card-2)",
+            border: "1.5px solid var(--pine-soft)",
             borderRadius: 12,
             padding: "12px 14px",
             marginBottom: 20,
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#1d4ed8" }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--pine)" }}>
             {formatPct(preview.pctBelow)} κάτω από τη ζητούμενη ({formatEuro(effectiveUnit.askingCurrent)})
           </div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", margin: "4px 0 10px" }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "var(--ink)", margin: "4px 0 10px" }}>
             Προτεινόμενη αντιπρόταση: {formatEuro(preview.suggested)}
           </div>
           <button
@@ -923,10 +926,10 @@ function OfferSheet(props: SheetProps) {
               minHeight: 44,
               width: "100%",
               borderRadius: 10,
-              border: "1.5px solid #1d4ed8",
-              background: "#ffffff",
-              color: "#1d4ed8",
-              fontSize: 14,
+              border: "1.5px solid var(--pine)",
+              background: "var(--card)",
+              color: "var(--pine)",
+              fontSize: 15,
               fontWeight: 700,
               cursor: "pointer",
             }}
@@ -948,7 +951,7 @@ function OfferSheet(props: SheetProps) {
 // ─── Board (US-4) ─────────────────────────────────────────────────────────────
 
 function TemperatureBadge(props: { temperature: string }) {
-  const color = TEMP_COLOR[props.temperature] ?? "#6b7280";
+  const color = TEMP_COLOR[props.temperature] ?? "var(--ink-muted)";
   return (
     <span
       style={{
@@ -976,7 +979,7 @@ function BoardCard(props: { card: Card }) {
   return (
     <div
       style={{
-        background: "#ffffff",
+        background: "var(--card)",
         borderRadius: 16,
         padding: 14,
         marginBottom: 10,
@@ -985,9 +988,9 @@ function BoardCard(props: { card: Card }) {
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontSize: 18, fontWeight: 800 }}>{c.pseudonym}</span>
+          <span style={{ fontSize: 17, fontWeight: 800 }}>{c.pseudonym}</span>
           {c.unitCode !== null ? (
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#6b7280" }}>{c.unitCode}</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-muted)" }}>{c.unitCode}</span>
           ) : null}
         </div>
         <TemperatureBadge temperature={c.temperature} />
@@ -1004,8 +1007,8 @@ function BoardCard(props: { card: Card }) {
           style={{
             fontSize: 13,
             fontWeight: 700,
-            color: "#374151",
-            background: "#f3f4f6",
+            color: "var(--ink)",
+            background: "var(--card-2)",
             borderRadius: 10,
             padding: "4px 10px",
           }}
@@ -1013,7 +1016,7 @@ function BoardCard(props: { card: Card }) {
           {stageLabel(c.stage)}
         </span>
         {c.offerAmount !== null ? (
-          <span style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: "var(--honey-ink)", fontVariantNumeric: "tabular-nums" }}>
             {formatEuro(c.offerAmount)}
           </span>
         ) : null}
@@ -1021,19 +1024,19 @@ function BoardCard(props: { card: Card }) {
       <div
         style={{
           marginTop: 10,
-          background: "#fffbeb",
-          border: "1px solid #fde68a",
+          background: "var(--card-2)",
+          border: "1px solid var(--line-strong)",
           borderRadius: 12,
           padding: "10px 12px",
         }}
       >
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#92400e", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--pine)", letterSpacing: 0.5 }}>
           ΕΠΟΜΕΝΗ ΕΝΕΡΓΕΙΑ
         </div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginTop: 2 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", marginTop: 2 }}>
           {c.nextAction}
         </div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#92400e", marginTop: 2 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--pine)", marginTop: 2 }}>
           → {c.nextOwner}
         </div>
       </div>
@@ -1046,15 +1049,15 @@ function CounterStat(props: { label: string; value: number }) {
     <div
       style={{
         flex: 1,
-        background: "#ffffff",
+        background: "var(--card)",
         borderRadius: 12,
         padding: "10px 8px",
         textAlign: "center",
         boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
       }}
     >
-      <div style={{ fontSize: 20, fontWeight: 800 }}>{props.value}</div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>{props.label}</div>
+      <div style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{props.value}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{props.label}</div>
     </div>
   );
 }
@@ -1165,20 +1168,20 @@ function App() {
     return (
       <div style={{ ...S.page, padding: 24 }}>
         <h1 style={{ fontSize: 20 }}>Κάτι πήγε στραβά</h1>
-        <p style={{ color: "#b91c1c", fontWeight: 600 }}>{loadError}</p>
+        <p style={{ color: "var(--danger)", fontWeight: 600 }}>{loadError}</p>
       </div>
     );
   }
 
   if (projects === null) {
-    return <div style={{ ...S.page, padding: 24, color: "#6b7280" }}>Φόρτωση…</div>;
+    return <div style={{ ...S.page, padding: 24, color: "var(--ink-muted)" }}>Φόρτωση…</div>;
   }
 
   if (projects.length === 0) {
     return (
       <div style={{ ...S.page, padding: 24 }}>
         <h1 style={{ fontSize: 20 }}>Δεν υπάρχουν έργα</h1>
-        <p style={{ color: "#6b7280" }}>
+        <p style={{ color: "var(--ink-muted)" }}>
           Φόρτωσε το αρχικό pipeline με <code>bun run seed</code> και ανανέωσε τη σελίδα.
         </p>
       </div>
@@ -1195,7 +1198,7 @@ function App() {
       {/* Header: current operator (switchable) + project selector + counters */}
       <div style={{ padding: "14px 0 4px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7280", letterSpacing: 0.4 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-muted)", letterSpacing: 0.4 }}>
             CONSTRUCTOR · ΠΩΛΗΣΕΙΣ
           </div>
           <button
@@ -1209,10 +1212,10 @@ function App() {
               gap: 6,
               padding: "6px 14px",
               borderRadius: 22,
-              border: "1.5px solid #d1d5db",
-              background: "#ffffff",
-              color: "#111827",
-              fontSize: 14,
+              border: "1.5px solid var(--line-strong)",
+              background: "var(--card)",
+              color: "var(--ink)",
+              fontSize: 15,
               fontWeight: 700,
               cursor: "pointer",
             }}
@@ -1241,10 +1244,10 @@ function App() {
                   padding: "8px 14px",
                   borderRadius: 22,
                   whiteSpace: "nowrap",
-                  border: `1.5px solid ${selected ? "#111827" : "#d1d5db"}`,
-                  background: selected ? "#111827" : "#ffffff",
-                  color: selected ? "#ffffff" : "#111827",
-                  fontSize: 14,
+                  border: `1.5px solid ${selected ? "var(--pine)" : "var(--line-strong)"}`,
+                  background: selected ? "var(--pine)" : "var(--card)",
+                  color: selected ? "var(--on-pine)" : "var(--ink)",
+                  fontSize: 15,
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -1255,7 +1258,7 @@ function App() {
           })}
         </div>
         {project !== null ? (
-          <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+          <div style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 10 }}>
             {project.builderName} · {project.area} · {project.microArea}
           </div>
         ) : null}
@@ -1270,7 +1273,7 @@ function App() {
 
       {/* Board: cards in API order (needs-attention-first, server-decided) */}
       {cards.length === 0 ? (
-        <div style={{ textAlign: "center", color: "#6b7280", padding: "40px 20px" }}>
+        <div style={{ textAlign: "center", color: "var(--ink-muted)", padding: "40px 20px" }}>
           Κανένας ενεργός ενδιαφερόμενος.
           <br />
           Πάτησε «Νέος» για την πρώτη καταχώριση.
@@ -1290,11 +1293,11 @@ function App() {
             right: 16,
             maxWidth: 488,
             margin: "0 auto",
-            background: "#065f46",
-            color: "#ffffff",
+            background: "var(--honey)",
+            color: "#2a2320",
             borderRadius: 12,
             padding: "12px 14px",
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 600,
             display: "flex",
             alignItems: "center",
@@ -1315,8 +1318,8 @@ function App() {
           left: 0,
           right: 0,
           padding: "10px 16px calc(10px + env(safe-area-inset-bottom))",
-          background: "rgba(244,244,245,0.96)",
-          borderTop: "1px solid #e5e7eb",
+          background: "rgba(247,243,234,0.96)",
+          borderTop: "1px solid var(--line)",
         }}
       >
         <div style={{ maxWidth: 520, margin: "0 auto", display: "flex", gap: 8 }}>
@@ -1336,8 +1339,8 @@ function App() {
                 minHeight: 56,
                 borderRadius: 14,
                 border: "none",
-                background: "#111827",
-                color: "#ffffff",
+                background: "var(--pine)",
+                color: "var(--on-pine)",
                 fontSize: 15,
                 fontWeight: 700,
                 display: "flex",

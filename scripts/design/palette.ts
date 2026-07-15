@@ -13,25 +13,31 @@ export const PALETTE = {
   pine: { dark: "#14555a", light: "#4fa3a8" },
   // ONE honey signal, money + save-moment only, <=5% of any screen (verbatim)
   honey: { warm: "#c89b3c", bright: "#d9ae55" },
-  // Grounds + ink + the single cool hue — PROVISIONAL placeholders (see note above)
-  grounds: { alabaster: "#f7f5f0", espresso: "#2a2320" },
-  ink: { warm: "#3b342e" },
-  cool: { psychros: "#3e5c6e" }, // Ψυχρός — the palette's only cool hue
+  // Grounds + ink + cool hue — the ACTUAL implemented light-theme token values
+  // (src/web/index.html :root, IMPACT-LOOP Round 1). This file and index.html are
+  // the two faces of one token set and MUST stay in sync — RATIFY_TARGET below is
+  // the reconciliation point (still pending Christos's final sign-off on the shades).
+  grounds: { alabaster: "#f7f3ea", espresso: "#2a2320" },
+  ink: { warm: "#2a2320" },
+  cool: { psychros: "#3e6b73" }, // Ψυχρός — the palette's only cool hue
 } as const;
 
-/** Every token hex, normalized — the allowed set for "0 off-palette colors". */
+/**
+ * Every token hex the app actually paints, normalized — the allowed set for "0
+ * off-palette colors". Mirrors src/web/index.html :root, BOTH themes (the harness
+ * captures light, but the gate admits dark so a dark-theme round doesn't regress).
+ */
 export const PALETTE_HEXES: ReadonlySet<string> = new Set([
-  PALETTE.pine.dark,
-  PALETTE.pine.light,
-  PALETTE.honey.warm,
-  PALETTE.honey.bright,
-  PALETTE.grounds.alabaster,
-  PALETTE.grounds.espresso,
-  PALETTE.ink.warm,
-  PALETTE.cool.psychros,
-  // pure black/white are always permitted as ink/ground extremes
-  "#000000",
-  "#ffffff",
+  // light theme
+  "#f7f3ea", "#fffdf8", "#f1ebdd", "#2a2320", "#6f665b", "#e7dfce", "#d7cbb3",
+  "#14555a", "#4fa3a8", "#fbf8f1", "#c89b3c", "#d9ae55", "#7a5a1e",
+  "#a4432f", "#f4e7e1", "#7d5216", "#f2e8d6", "#3e6b73", "#e5edee",
+  // dark theme
+  "#15191a", "#1d2322", "#232b2a", "#ece6da", "#a79d90", "#313b3a", "#3d4948",
+  "#5cb6bb", "#0e1516", "#e6c274", "#e08a72", "#3a2622", "#d6a45e", "#332a1c",
+  "#7fb0b8", "#233234",
+  // pure black/white always permitted as extremes
+  "#000000", "#ffffff",
 ]);
 
 /** Pinned type scale (verbatim — DESIGN-LOOP.md): 13/15/17/20/24 px. */
@@ -89,9 +95,10 @@ export function isOnPalette(hex: string): boolean {
   return PALETTE_HEXES.has(normalizeHex(hex));
 }
 
+/** The honey family — the gold accents AND the AA-safe honey-ink used for € text. */
+const HONEY_HEXES = new Set(["#c89b3c", "#d9ae55", "#7a5a1e", "#e6c274"]);
 export function isHoneyToken(hex: string): boolean {
-  const h = normalizeHex(hex);
-  return h === PALETTE.honey.warm || h === PALETTE.honey.bright;
+  return HONEY_HEXES.has(normalizeHex(hex));
 }
 
 export function isOnScale(px: number): boolean {

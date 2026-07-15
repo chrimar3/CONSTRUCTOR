@@ -85,10 +85,14 @@ const AUDIT_FN = `(() => {
     if (opaque(cs.color)) used.add(cs.color);
     if (opaque(cs.borderTopColor) && parseFloat(cs.borderTopWidth) > 0) used.add(cs.borderTopColor);
     const hasText = Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent.trim().length > 0);
-    if (hasText) {
+    // Only RENDERED text counts — skip <head> metadata (title/style/script) which
+    // carry text nodes but never paint, and anything with no layout box.
+    const rendered = !/^(HEAD|TITLE|STYLE|SCRIPT|META|LINK|NOSCRIPT|BASE)$/.test(el.tagName) && el.getClientRects().length > 0;
+    if (hasText && rendered) {
       const size = Math.round(parseFloat(cs.fontSize));
       if (size > 0) sizes.add(size);
-      pairs.push({ color: cs.color, bg: effectiveBg(el), size });
+      const disabled = el.matches && (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true');
+      if (!disabled) pairs.push({ color: cs.color, bg: effectiveBg(el), size });
     }
     if (isInteractive(el) && rect.width > 0 && rect.height > 0) {
       interactiveCount++;

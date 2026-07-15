@@ -8,6 +8,7 @@ import {
   HONEY_MAX_SHARE,
   contrastRatio,
   honeyShare,
+  isHoneyToken,
   isOnPalette,
   isOnScale,
   normalizeHex,
@@ -60,11 +61,12 @@ function touchOkShare(f: AuditFrame): number {
 /** Score one frame's objective facts. */
 export function scoreFrame(f: AuditFrame, tapOk = true): ObjectiveScreen {
   const honey = honeyShare(f.paintedByColor);
-  // "honey_correct" for the baseline = within budget AND actually present on the
-  // money/save surfaces (board + sheets + reports). Absent honey on a screen that
-  // needs it is NOT correct; absent on PIN/operator is fine.
+  // "honey_correct" = within the painted-pixel budget AND actually present on the
+  // money/save surfaces (board + sheets + reports). Presence checks USED colors
+  // (incl. text), so the AA-safe honey-ink on € figures counts even though it
+  // paints ~no area. Absent on PIN/operator is fine.
   const needsHoney = /board|sheet|report|offer/.test(f.frame);
-  const honeyPresent = honey > 0;
+  const honeyPresent = honey > 0 || f.usedColors.some(isHoneyToken);
   const honey_correct = honey <= HONEY_MAX_SHARE && (!needsHoney || honeyPresent);
   return {
     palette_on_target_share: paletteOnTargetShare(f.paintedByColor),

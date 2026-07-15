@@ -14,14 +14,51 @@
   <meta name="apple-mobile-web-app-title" content="Constructor">
   <title>Constructor — Πωλήσεις</title>
   <style>
-    /* Minimal base only — all component styling is inline in App.tsx (plan.md). */
+    /* «Πεύκο & Μέλι» design tokens (IMPACT-LOOP Round 1). Distinct semantic roles
+       so ink-text and pine-action never collide. Component styling stays inline in
+       App.tsx but resolves through these vars. */
+    :root {
+      --paper: #f7f3ea;        /* alabaster ground */
+      --card: #fffdf8;         /* warm card surface */
+      --card-2: #f1ebdd;       /* inset / raised warm panel */
+      --ink: #2a2320;          /* espresso — primary text */
+      --ink-muted: #6f665b;    /* warm muted text */
+      --line: #e7dfce;         /* warm hairline */
+      --line-strong: #d7cbb3;
+      --pine: #14555a;         /* Aegean-pine — primary action, links, headings */
+      --pine-soft: #4fa3a8;
+      --on-pine: #fbf8f1;      /* text on pine */
+      --honey: #c89b3c;        /* THE honey signal — money + save-moment only, ≤5% */
+      --honey-soft: #d9ae55;
+      --honey-ink: #7a5a1e;
+      --hot: #a4432f;  --hot-bg: #f4e7e1;    /* Θερμός */
+      --warm: #7d5216; --warm-bg: #f2e8d6;   /* Χλιαρός — deep ochre, AA on card (distinct from the honey money-signal) */
+      --cold: #3e6b73; --cold-bg: #e5edee;   /* Ψυχρός — the palette's only cool hue */
+      --danger: #a4432f;
+      --r-card: 14px; --r-pill: 999px; --r-field: 12px;
+      --dur: 120ms;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #15191a; --card: #1d2322; --card-2: #232b2a;
+        --ink: #ece6da; --ink-muted: #a79d90; --line: #313b3a; --line-strong: #3d4948;
+        --pine: #5cb6bb; --pine-soft: #4fa3a8; --on-pine: #0e1516;
+        --honey: #d9ae55; --honey-soft: #e6c274; --honey-ink: #e6c274;
+        --hot: #e08a72; --hot-bg: #3a2622; --warm: #d6a45e; --warm-bg: #332a1c;
+        --cold: #7fb0b8; --cold-bg: #233234; --danger: #e08a72;
+      }
+    }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; padding: 0; background: #f4f4f5; }
+    html, body { margin: 0; padding: 0; background: var(--paper); }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: #111827;
+      font-family: "Commissioner", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+      font-size: 17px;   /* on the pinned scale — unstyled text no longer inherits the 16px UA default */
+      color: var(--ink);
     }
     button, input { font: inherit; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
   </style>
 </head>
 <body>
