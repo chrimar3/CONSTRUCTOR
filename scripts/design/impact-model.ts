@@ -47,6 +47,8 @@ export interface Lever {
   note?: string;
   /** research provenance / gain justification, filled by the research pass */
   rationale?: string;
+  /** "done" levers stay in the catalog for the record but are excluded from ranking. */
+  status?: "open" | "done";
 }
 
 export interface RankOpts {

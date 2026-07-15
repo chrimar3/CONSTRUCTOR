@@ -13,6 +13,7 @@ export const SEED_LEVERS: Lever[] = [
     title: "«Πεύκο & Μέλι» design-token layer (palette + type + space) across all screens",
     zone: "YELLOW",
     effort: 6,
+    status: "done", // Round 1 (5e52746): palette 0.27→0.86, all mechanical gates pass
     allScreens: true,
     affects: [
       { dimension: "warmth", gain: 6 }, // raises cap_warmth 3→9; the headline lever
@@ -26,22 +27,24 @@ export const SEED_LEVERS: Lever[] = [
   },
   {
     id: "info-complete-entry",
-    title: "Information completeness on the PIN + operator entry screens",
+    title: "Orienting context on the PIN + operator entry screens (within the minimal-auth ceiling)",
     zone: "YELLOW",
     effort: 3,
     affects: [
-      { screen: "pin", dimension: "completeness", gain: 4 },
-      { screen: "operator", dimension: "completeness", gain: 4 },
-      { screen: "pin", dimension: "hierarchy", gain: 1 },
-      { screen: "operator", dimension: "hierarchy", gain: 1 },
+      // Ceiling-adjusted (research 2026-07-15): auth/entry screens have a purpose-bound
+      // completeness ceiling (~6–7) — minimal is best practice. Current ~4 → realistic gain ~2.
+      // NEVER add taps/friction to a PIN screen; only orienting context/branding.
+      { screen: "pin", dimension: "completeness", gain: 2 },
+      { screen: "operator", dimension: "completeness", gain: 2 },
     ],
-    note: "Both entry screens scored completeness ~3 (sparse). Add orienting context/branding without adding taps.",
+    note: "PIN/operator are the weakest screens (~6.4) and gate T2's no-screen-<6.5 floor — but the instrument is orienting context/branding, not more fields.",
   },
   {
     id: "contrast-aa",
     title: "Bring every text pair to WCAG AA",
     zone: "GREEN",
     effort: 2,
+    status: "done", // Round 1: contrast pairs below AA 62→0
     allScreens: true,
     affects: [{ dimension: "hierarchy", gain: 1 }],
     note: "Raises cap_hierarchy toward 10; closes the contrast objective gate. Mechanical, low-risk.",
@@ -51,6 +54,7 @@ export const SEED_LEVERS: Lever[] = [
     title: "Tabular numerals on money + counts (the type scale itself is folded into the token layer)",
     zone: "GREEN",
     effort: 1,
+    status: "done", // Round 1: tabular-nums on € figures + board counters + report bodies
     allScreens: true,
     // The pinned scale is defined by the token layer (tokens-pinemeli), so only the
     // non-overlapping remnant remains here: tabular figures so € amounts and counts
@@ -60,23 +64,26 @@ export const SEED_LEVERS: Lever[] = [
     note: "Fast follow-up after the token layer: font-variant-numeric: tabular-nums on every €/count element.",
   },
   {
-    id: "honey-signal",
-    title: "Introduce the honey signal on money + save surfaces (≤5%)",
+    id: "honey-reports",
+    title: "Honey signal on report € figures (unblocks honeyCorrect → the T2 gate)",
     zone: "YELLOW",
-    effort: 2,
+    effort: 1,
     affects: [
-      { screen: "board", dimension: "warmth", gain: 1 },
-      { screen: "sheet-offer", dimension: "warmth", gain: 1 },
       { screen: "report-biweekly", dimension: "gravitas", gain: 1 },
       { screen: "report-monthly", dimension: "gravitas", gain: 1 },
     ],
-    note: "Depends on the token layer for the honey value; satisfies the honey-correctness objective gate.",
+    // The app honey (money + save moment) shipped in Round 1; only the reports still
+    // lack it, which is why objective honeyCorrect is false and T2 is blocked. NOTE:
+    // ExpectedLift undersells this — its real value is closing the honeyCorrect TIER
+    // gate, which the judged-dimension model does not price. Pair with a T2 push.
+    note: "Reports render € in ink, not honey — the only surface keeping honeyCorrect false. Small judged lift, but a T2 prerequisite.",
   },
   {
     id: "report-gravitas",
     title: "Report typography: serif headings + tabular figures + tighter hierarchy",
     zone: "YELLOW",
     effort: 3,
+    status: "done", // Round 1: serif (Georgia) headings + tabular figures in html.ts; reports gravitas ~8
     affects: [
       { screen: "report-biweekly", dimension: "typography", gain: 2 },
       { screen: "report-monthly", dimension: "typography", gain: 2 },

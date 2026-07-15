@@ -25,7 +25,11 @@ const bench = computeBenchmark(O, S);
 const scores: ScreenScores = Object.fromEntries(
   Object.entries(bench.perScreen).map(([k, v]) => [k, v.dims]),
 );
-const ranked = rankLevers(SEED_LEVERS, scores, { ceiling: CEILING });
+// Only rank OPEN levers — landed ones stay in the catalog for the record but must
+// not be re-recommended (they self-corrected to near-zero anyway once their headroom
+// closed; excluding them keeps the ledger honest as gates close).
+const openLevers = SEED_LEVERS.filter((l) => l.status !== "done");
+const ranked = rankLevers(openLevers, scores, { ceiling: CEILING });
 
 // aggregate objective facts for the tier gate
 const shares = Object.values(O).map((o) => o.palette_on_target_share);
