@@ -17,21 +17,6 @@ report with one command.
 
 </div>
 
-<table>
-  <tr>
-    <td width="25%"><img src="docs/screenshots/pin.jpeg" alt="Team-PIN gate"></td>
-    <td width="25%"><img src="docs/screenshots/board.jpeg" alt="Pipeline board"></td>
-    <td width="25%"><img src="docs/screenshots/capture-lead.jpeg" alt="Lead capture sheet"></td>
-    <td width="25%"><img src="docs/screenshots/report.jpeg" alt="Builder report"></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>Team-PIN gate</sub></td>
-    <td align="center"><sub>Needs-attention-first board</sub></td>
-    <td align="center"><sub>≤30s one-handed capture</sub></td>
-    <td align="center"><sub>Deterministic builder report</sub></td>
-  </tr>
-</table>
-
 > The interface is Greek (its operators are a three-person Athens office); the codebase, docs and
 > commit history are English. Visual direction: **«Πεύκο & Μέλι»** — Aegean-pine, a single honey
 > accent for money, warm alabaster grounds.
