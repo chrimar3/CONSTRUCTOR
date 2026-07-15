@@ -202,6 +202,22 @@ const S = {
 
 // ─── Small building blocks ────────────────────────────────────────────────────
 
+/**
+ * Brand lockup for the entry screens (IMPACT-LOOP Round 2, info-complete-entry).
+ * Orients "what is this" without adding taps — the minimal-auth completeness ceiling.
+ */
+function BrandLockup(props: { subtitle: string }) {
+  return (
+    <div style={{ textAlign: "center", padding: "44px 0 20px" }}>
+      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2.5, color: "var(--pine)", textTransform: "uppercase" }}>
+        Constructor
+      </div>
+      <div style={{ width: 28, height: 2, background: "var(--pine-soft)", borderRadius: 2, margin: "8px auto" }} />
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{props.subtitle}</div>
+    </div>
+  );
+}
+
 function Field(props: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 20 }}>
@@ -463,11 +479,12 @@ function PinGate(props: { onSuccess: () => void }) {
       style={{ position: "fixed", inset: 0, background: "var(--paper)", overflowY: "auto", zIndex: 50 }}
     >
       <div style={{ ...S.page, padding: "0 16px 40px" }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "48px 0 8px", textAlign: "center" }}>
+        <BrandLockup subtitle="Πωλήσεις ακινήτων · πρόσβαση ομάδας" />
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "8px 0 8px", textAlign: "center" }}>
           Κωδικός ομάδας
         </h1>
         <p style={{ textAlign: "center", color: "var(--ink-muted)", fontSize: 15, margin: "0 0 24px" }}>
-          Βάλε το PIN της ομάδας για να συνεχίσεις.
+          Βάλε το PIN της ομάδας για να συνεχίσεις. Η εφαρμογή δουλεύει μόνο στο Wi-Fi του γραφείου.
         </p>
         <input
           style={{
@@ -553,9 +570,13 @@ function OperatorGate(props: {
             </button>
           </div>
         ) : null}
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "48px 0 24px", textAlign: "center" }}>
+        <BrandLockup subtitle="Πωλήσεις ακινήτων" />
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "8px 0 8px", textAlign: "center" }}>
           Ποιος είσαι;
         </h1>
+        <p style={{ textAlign: "center", color: "var(--ink-muted)", fontSize: 15, margin: "0 0 24px" }}>
+          Διάλεξε το όνομά σου για να καταχωρείς με το χέρι σου.
+        </p>
         <div style={{ display: "grid", gap: 12 }}>
           {OPERATORS.map((o) => (
             <button

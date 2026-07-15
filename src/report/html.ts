@@ -31,9 +31,13 @@ function escapeHtml(text: string): string {
 
 // ─── Inline markup (on already-escaped text) ─────────────────────────────────
 
-/** Escapes, then applies **bold** (the only mid-line inline construct emitted). */
+/** Escapes, applies **bold**, then paints € figures with the honey money signal. */
 function inline(text: string): string {
-  return escapeHtml(text).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  return escapeHtml(text)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    // Honey signal on money (IMPACT-LOOP Round 2): wrap "238.000 €" etc. Runs on
+    // already-escaped text, and € never appears inside a tag, so markup is untouched.
+    .replace(/(\d[\d.,]*\s*€)/g, '<span class="eur">$1</span>');
 }
 
 /**
@@ -155,8 +159,9 @@ export function markdownToHtml(markdown: string): string {
 // no access to the app's index.html). Serif headings for gravitas (Literata-
 // evoking via a system serif; self-hosted Literata is a follow-up), pinned type
 // scale in px (13/15/17/20/24), tabular figures so € reads as data.
-const STYLE = `:root{--paper:#f7f3ea;--card:#fffdf8;--card-2:#f1ebdd;--ink:#2a2320;--ink-muted:#6f665b;--line-strong:#d7cbb3;--pine:#14555a}
+const STYLE = `:root{--paper:#f7f3ea;--card:#fffdf8;--card-2:#f1ebdd;--ink:#2a2320;--ink-muted:#6f665b;--line-strong:#d7cbb3;--pine:#14555a;--honey-ink:#7a5a1e}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.55;color:var(--ink);background:var(--paper);font-variant-numeric:tabular-nums}
+.eur{color:var(--honey-ink);font-weight:700}
 main{max-width:44em;margin:0 auto;padding:1.5em 1.25em 3em;background:var(--card)}
 h1{font-family:Georgia,"Times New Roman",serif;font-size:24px;line-height:1.3;margin:0 0 .75em;padding-bottom:.4em;border-bottom:3px solid var(--pine);color:var(--ink)}
 h2{font-family:Georgia,"Times New Roman",serif;font-size:20px;margin:1.8em 0 .6em;padding-bottom:.25em;border-bottom:1px solid var(--line-strong);color:var(--pine)}
