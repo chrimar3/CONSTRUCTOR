@@ -42,6 +42,8 @@ interface Audit {
   smallTargets: { tag: string; w: number; h: number; label: string }[];
   // text runs paired with their effective (first opaque ancestor) background
   textPairs: { color: string; bg: string; size: number }[];
+  // total interactive elements (for touch-target share)
+  interactiveCount: number;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -54,6 +56,7 @@ const AUDIT_FN = `(() => {
   const sizes = new Set();
   const small = [];
   const pairs = [];
+  let interactiveCount = 0;
   const isInteractive = (el) => {
     const t = el.tagName.toLowerCase();
     if (t === 'button' || t === 'a' || t === 'input' || t === 'select' || t === 'textarea') return true;
@@ -87,11 +90,14 @@ const AUDIT_FN = `(() => {
       if (size > 0) sizes.add(size);
       pairs.push({ color: cs.color, bg: effectiveBg(el), size });
     }
-    if (isInteractive(el) && rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44)) {
-      small.push({ tag: el.tagName.toLowerCase(), w: Math.round(rect.width), h: Math.round(rect.height), label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30) });
+    if (isInteractive(el) && rect.width > 0 && rect.height > 0) {
+      interactiveCount++;
+      if (rect.width < 44 || rect.height < 44) {
+        small.push({ tag: el.tagName.toLowerCase(), w: Math.round(rect.width), h: Math.round(rect.height), label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30) });
+      }
     }
   }
-  return { paintedByColor, usedColors: Array.from(used), fontSizes: Array.from(sizes).sort((a,b)=>a-b), smallTargets: small, textPairs: pairs };
+  return { paintedByColor, usedColors: Array.from(used), fontSizes: Array.from(sizes).sort((a,b)=>a-b), smallTargets: small, textPairs: pairs, interactiveCount };
 })()`;
 
 async function auditPage(page: Page, frame: string): Promise<Audit> {
