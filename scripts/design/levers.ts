@@ -30,6 +30,7 @@ export const SEED_LEVERS: Lever[] = [
     title: "Orienting context on the PIN + operator entry screens (within the minimal-auth ceiling)",
     zone: "YELLOW",
     effort: 3,
+    status: "done", // Round 2 (brand lockup + context): pin composite 6.38→7.07
     affects: [
       // Ceiling-adjusted (research 2026-07-15): auth/entry screens have a purpose-bound
       // completeness ceiling (~6–7) — minimal is best practice. Current ~4 → realistic gain ~2.
@@ -68,6 +69,7 @@ export const SEED_LEVERS: Lever[] = [
     title: "Honey signal on report € figures (unblocks honeyCorrect → the T2 gate)",
     zone: "YELLOW",
     effort: 1,
+    status: "done", // Round 2: flipped honeyCorrect false→true (was false in Round 1) → T2
     affects: [
       { screen: "report-biweekly", dimension: "gravitas", gain: 1 },
       { screen: "report-monthly", dimension: "gravitas", gain: 1 },
@@ -97,8 +99,20 @@ export const SEED_LEVERS: Lever[] = [
     title: "Choreographed save moment + 120ms state transitions (reduced-motion aware)",
     zone: "YELLOW",
     effort: 3,
-    allScreens: true,
-    affects: [{ dimension: "responsiveness", gain: 2 }],
-    note: "Responsiveness was the lowest raw dimension (5.5). prefers-reduced-motion collapses all.",
+    // Scoped to INTERACTIVE screens only (research 2026-07-15): the two static
+    // report documents have no save action or runtime state, so allScreens overstated
+    // the lift by crediting them ~+2. Responsiveness is the lowest dimension (~6);
+    // 120ms is the responsive-feedback sweet spot; Article I independently mandates
+    // save feedback. NOTE: a screenshot benchmark can't SEE motion — verify by driving
+    // the app, not the static panel (its realized panel-lift will look muted).
+    affects: [
+      { screen: "board", dimension: "responsiveness", gain: 2 },
+      { screen: "sheet-lead", dimension: "responsiveness", gain: 2 },
+      { screen: "sheet-viewing", dimension: "responsiveness", gain: 2 },
+      { screen: "sheet-offer", dimension: "responsiveness", gain: 2 },
+      { screen: "pin", dimension: "responsiveness", gain: 2 },
+      { screen: "operator", dimension: "responsiveness", gain: 2 },
+    ],
+    note: "Responsiveness is the lowest dimension. Interactive screens only; prefers-reduced-motion collapses all. Verify motion by click-through, not the static benchmark.",
   },
 ];
