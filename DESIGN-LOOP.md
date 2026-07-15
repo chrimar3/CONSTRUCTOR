@@ -1,5 +1,10 @@
 # DESIGN-LOOP.md — the goal-based loop for elevating Constructor's design/UX/UI
 
+> **SUPERSEDED (2026-07-15):** the LOOP mechanics below are replaced by **`IMPACT-LOOP.md`**
+> (honest O-caps-S benchmark + tier ladder + impact-ranked levers; ADR-0036). This file's
+> **rubric (Benchmarks B)** and **anti-drift protocol** are retained and extended there —
+> read them here, run the loop from `IMPACT-LOOP.md`.
+
 *Operational document (committed process infrastructure, like REBUILD-RUNBOOK.md).
 Companion rationale: the UX/UI Elevation Plan artifact. Direction: «Πεύκο & Μέλι».*
 
