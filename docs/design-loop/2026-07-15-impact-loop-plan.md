@@ -38,7 +38,9 @@ Executed inline on branch `design-loop/round-0`; every task TDD'd, gates green (
 | 9 · dynamic Workflow + bridge CLIs + ADR-0036 | ✅ done | `956854c` | JS loads; run in Task 12 |
 | 10 · `IMPACT-LOOP.md` + supersession pointer | ✅ done | `a37dd2a` | — |
 | 11 · round artifact builder | ✅ done | `0b0b4f9` | renders 11 KB HTML |
-| 12 · run the loop once | ⏳ in progress | — | Workflow `wf_359429bd-57f` running |
+| 12 · run the loop once | ✅ done | — | Workflow `wf_359429bd-57f`, 6 agents 0 errors: honest **5.63** (T0), rec = token layer; research caught 2 model double-counts |
+
+**Plan complete (12/12).** The dynamic loop ran end-to-end and produced a fresh, calibrated benchmark + a research-validated recommendation. Awaiting the human-gated go on implementing the recommended lever (its own TDD/ZONING/ADR round).
 
 The per-step `- [ ]` checkboxes below are left as authored for reference; this table is the authoritative status.
 
