@@ -162,10 +162,9 @@ async function main() {
 
     // 3) Board — pick operator Χρήστος
     await clickByText(page, "Χρήστος");
-    await page.waitForFunction(
-      () => document.body.textContent?.includes("ΠΩΛΗΣΕΙΣ"),
-      { timeout: 8000 },
-    );
+    // Wait on a structural marker, never on header copy: the board's wording is
+    // exactly what a design pass is allowed to change.
+    await page.waitForSelector('[data-screen="board"]', { timeout: 8000 });
     await sleep(400);
     await shoot(page, "frame-3-board");
     audits.push(await auditPage(page, "board"));

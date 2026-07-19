@@ -14,45 +14,46 @@
   <meta name="apple-mobile-web-app-title" content="Constructor">
   <title>Constructor — Πωλήσεις</title>
   <style>
-    /* «Πεύκο & Μέλι» design tokens (IMPACT-LOOP Round 1). Distinct semantic roles
-       so ink-text and pine-action never collide. Component styling stays inline in
-       App.tsx but resolves through these vars. */
+    /* VARIANT A — "Airbnb-warm". The warmth is the whitespace, never a beige tint:
+       pure-white ground, one confident teal used only for meaning (primary action,
+       operator identity, the next-action label), soft real shadow INSTEAD of a
+       border on cards, 16px radii, generous interior padding.
+
+       Single (light) theme by deliberate choice — see DECISIONS.md ADR-0037. The
+       previous dark block rendered in headless capture while the fixed bottom bar
+       stayed hardcoded light, so what shipped was never what was reviewed.
+       Component styling stays inline in App.tsx but resolves through these vars. */
     :root {
-      --paper: #f7f3ea;        /* alabaster ground */
-      --card: #fffdf8;         /* warm card surface */
-      --card-2: #f1ebdd;       /* inset / raised warm panel */
-      --ink: #2a2320;          /* espresso — primary text */
-      --ink-muted: #6f665b;    /* warm muted text */
-      --line: #e7dfce;         /* warm hairline */
-      --line-strong: #d7cbb3;
-      --pine: #14555a;         /* Aegean-pine — primary action, links, headings */
-      --pine-soft: #4fa3a8;
-      --on-pine: #fbf8f1;      /* text on pine */
-      --honey: #c89b3c;        /* THE honey signal — money + save-moment only, ≤5% */
-      --honey-soft: #d9ae55;
-      --honey-ink: #7a5a1e;
-      --hot: #a4432f;  --hot-bg: #f4e7e1;    /* Θερμός */
-      --warm: #7d5216; --warm-bg: #f2e8d6;   /* Χλιαρός — deep ochre, AA on card (distinct from the honey money-signal) */
-      --cold: #3e6b73; --cold-bg: #e5edee;   /* Ψυχρός — the palette's only cool hue */
-      --danger: #a4432f;
-      --r-card: 14px; --r-pill: 999px; --r-field: 12px;
+      color-scheme: light;
+      --bg: #ffffff;           /* pure-white ground — the air IS the warmth */
+      --surface: #ffffff;      /* cards sit on the ground, lifted by shadow only */
+      --surface-2: #f4f4f4;    /* inset field / next-action panel */
+      --ink: #1c1c1c;          /* primary text */
+      --ink-2: #5e5e5e;        /* secondary text — AA on both grounds */
+      --ink-3: #b0b0b0;        /* non-text only: icons, dividers, placeholders */
+      --line: #ebebeb;         /* hairline */
+      --line-2: #dddddd;       /* field / unselected control border */
+      --accent: #0f7a6c;       /* THE accent — primary action, identity, next action */
+      --accent-press: #0b6357;
+      --accent-soft: #d9eae7;  /* accent tint — chips only, never large fills */
+      --on-accent: #ffffff;
+      --money: #1c1c1c;        /* money is bold INK, never a colour (AVOID LIST) */
+      --hot: #b3392e;  --hot-bg: #fbeceb;    /* Θερμός */
+      --warm: #8a5a12; --warm-bg: #f8f0e2;   /* Χλιαρός */
+      --cold: #2f6d7d; --cold-bg: #e8f1f4;   /* Ψυχρός */
+      --danger: #b3392e;
+      --r-card: 16px; --r-pill: 999px; --r-field: 12px; --r-btn: 14px;
+      --pad-card: 16px;
+      --shadow-card: 0 6px 20px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-btn: 0 4px 14px rgba(15,122,108,.28);
       --dur: 120ms;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --paper: #15191a; --card: #1d2322; --card-2: #232b2a;
-        --ink: #ece6da; --ink-muted: #a79d90; --line: #313b3a; --line-strong: #3d4948;
-        --pine: #5cb6bb; --pine-soft: #4fa3a8; --on-pine: #0e1516;
-        --honey: #d9ae55; --honey-soft: #e6c274; --honey-ink: #e6c274;
-        --hot: #e08a72; --hot-bg: #3a2622; --warm: #d6a45e; --warm-bg: #332a1c;
-        --cold: #7fb0b8; --cold-bg: #233234; --danger: #e08a72;
-      }
-    }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; padding: 0; background: var(--paper); }
+    html, body { margin: 0; padding: 0; background: var(--bg); }
     body {
-      font-family: "Commissioner", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       font-size: 17px;   /* on the pinned scale — unstyled text no longer inherits the 16px UA default */
+      -webkit-font-smoothing: antialiased;
       color: var(--ink);
     }
     button, input { font: inherit; }

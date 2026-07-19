@@ -1,52 +1,55 @@
-// DESIGN-LOOP Round 0 — «Πεύκο & Μέλι» token spec + pure mechanical-gate logic.
+// DESIGN VARIANT A — "Airbnb-warm": the token spec the mechanical gates check,
+// reconciled to what src/web/index.html and src/report/html.ts ACTUALLY ship on
+// this branch. This file and index.html are the two faces of one token set and
+// MUST stay in step — a gate checking a palette the app does not paint proves
+// nothing.
 //
-// SOURCE OF TRUTH: the hex values marked (verbatim) are quoted directly from
-// DESIGN-LOOP.md. The neutral grounds/ink/cool values are marked PROVISIONAL —
-// their exact hexes live in the external "UX/UI Elevation Plan" artifact, not in
-// the repo. They do NOT affect the Round-0 baseline conclusion (the current app
-// uses none of them either), and must be ratified into this file before an
-// elevation round claims token compliance. Until then the token gate reports the
-// baseline honestly: how far the CURRENT palette is from the target.
+// Direction: pure-white ground, ONE confident teal accent spent only on meaning
+// (primary action, operator identity, the next-action label), soft shadow in
+// place of a card border, 16px radii, generous air. Money is bold tabular INK —
+// variant A ships NO money colour at all.
 
 export const PALETTE = {
-  // Aegean-pine accent (verbatim — DESIGN-LOOP.md)
-  pine: { dark: "#14555a", light: "#4fa3a8" },
-  // ONE honey signal, money + save-moment only, <=5% of any screen (verbatim)
-  honey: { warm: "#c89b3c", bright: "#d9ae55" },
-  // Grounds + ink + cool hue — the ACTUAL implemented light-theme token values
-  // (src/web/index.html :root, IMPACT-LOOP Round 1). This file and index.html are
-  // the two faces of one token set and MUST stay in sync — RATIFY_TARGET below is
-  // the reconciliation point (still pending Christos's final sign-off on the shades).
-  grounds: { alabaster: "#f7f3ea", espresso: "#2a2320" },
-  ink: { warm: "#2a2320" },
-  cool: { psychros: "#3e6b73" }, // Ψυχρός — the palette's only cool hue
+  // The single accent — primary action, identity, next-action label (verbatim
+  // from src/web/index.html :root).
+  accent: { base: "#0f7a6c", press: "#0b6357", soft: "#d9eae7" },
+  // Grounds + ink.
+  grounds: { white: "#ffffff", field: "#f4f4f4" },
+  ink: { primary: "#1c1c1c", secondary: "#5e5e5e" },
+  // Temperature — carried by a dot + label only, never a filled pill.
+  temp: { hot: "#b3392e", warm: "#8a5a12", cold: "#2f6d7d" },
 } as const;
 
 /**
  * Every token hex the app actually paints, normalized — the allowed set for "0
- * off-palette colors". Mirrors src/web/index.html :root, BOTH themes (the harness
- * captures light, but the gate admits dark so a dark-theme round doesn't regress).
+ * off-palette colors". Mirrors src/web/index.html :root. Variant A ships a
+ * SINGLE (light) theme by deliberate choice (ADR-0037), so unlike the previous
+ * token set there are no dark-theme hexes to admit.
  */
 export const PALETTE_HEXES: ReadonlySet<string> = new Set([
-  // light theme
-  "#f7f3ea", "#fffdf8", "#f1ebdd", "#2a2320", "#6f665b", "#e7dfce", "#d7cbb3",
-  "#14555a", "#4fa3a8", "#fbf8f1", "#c89b3c", "#d9ae55", "#7a5a1e",
-  "#a4432f", "#f4e7e1", "#7d5216", "#f2e8d6", "#3e6b73", "#e5edee",
-  // dark theme
-  "#15191a", "#1d2322", "#232b2a", "#ece6da", "#a79d90", "#313b3a", "#3d4948",
-  "#5cb6bb", "#0e1516", "#e6c274", "#e08a72", "#3a2622", "#d6a45e", "#332a1c",
-  "#7fb0b8", "#233234",
-  // pure black/white always permitted as extremes
-  "#000000", "#ffffff",
+  "#ffffff", "#f4f4f4",                          // grounds
+  "#1c1c1c", "#5e5e5e", "#b0b0b0",               // ink
+  "#ebebeb", "#dddddd",                          // lines
+  "#0f7a6c", "#0b6357", "#d9eae7",               // accent family
+  "#b3392e", "#fbeceb",                          // hot / Θερμός
+  "#8a5a12", "#f8f0e2",                          // warm / Χλιαρός
+  "#2f6d7d", "#e8f1f4",                          // cold / Ψυχρός
+  "#000000",                                     // pure black always permitted
 ]);
 
-/** Pinned type scale (verbatim — DESIGN-LOOP.md): 13/15/17/20/24 px. */
-export const TYPE_SCALE: readonly number[] = [13, 15, 17, 20, 24] as const;
+/** Pinned type scale (variant A — friendlier and larger than the old 13/15/17/20/24). */
+export const TYPE_SCALE: readonly number[] = [13, 15, 17, 22, 26] as const;
 
-/** Radius language (verbatim): 14 / 999 / 20 / 12. */
-export const RADII: readonly number[] = [14, 999, 20, 12] as const;
+/** Radius language (variant A): card / pill / field / button. */
+export const RADII: readonly number[] = [16, 999, 12, 14] as const;
 
-/** Honey budget: honey may paint at most this share of any screen's pixels. */
+/**
+ * Retired-signal budget. The rejected «Πεύκο & Μέλι» pass painted € figures gold;
+ * the AVOID LIST forbids it, and variant A sets money as bold ink instead. The
+ * honey family below is therefore kept deliberately — not as a colour the design
+ * uses, but as a DETECTOR: any reappearance of the gold money signal makes this
+ * share non-zero and the gate visible. Expected reading is 0.0% on every frame.
+ */
 export const HONEY_MAX_SHARE = 0.05;
 
 // ─── Color parsing + WCAG contrast ───────────────────────────────────────────
@@ -95,7 +98,8 @@ export function isOnPalette(hex: string): boolean {
   return PALETTE_HEXES.has(normalizeHex(hex));
 }
 
-/** The honey family — the gold accents AND the AA-safe honey-ink used for € text. */
+/** The retired honey family — the gold accents AND the honey-ink once used for
+    € text. Variant A paints none of them; this set exists to detect a relapse. */
 const HONEY_HEXES = new Set(["#c89b3c", "#d9ae55", "#7a5a1e", "#e6c274"]);
 export function isHoneyToken(hex: string): boolean {
   return HONEY_HEXES.has(normalizeHex(hex));

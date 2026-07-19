@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Check, ChevronLeft, Euro, Eye, User, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, Euro, Eye, UserPlus } from "lucide-react";
 import { OPERATORS } from "../domain/operators";
 import {
   budgetBandLabel,
@@ -152,22 +152,25 @@ const S = {
     margin: "0 auto",
     minHeight: "100vh",
   } as const,
+  /** Form section label: calm ink, NOT the accent — the accent is reserved for
+      meaning (primary action, identity, next action), never for decoration. */
   sectionLabel: {
     fontSize: 13,
     fontWeight: 700,
-    color: "var(--pine)",
+    color: "var(--ink)",
     textTransform: "uppercase" as const,
     letterSpacing: 0.6,
-    margin: "0 0 8px 2px",
+    margin: "0 0 10px 2px",
   },
-  gridBtn: (selected: boolean, disabled = false, color = "var(--pine)") =>
+  /** Segmented-control option: white + hairline; selected = calm ink fill. */
+  gridBtn: (selected: boolean, disabled = false, color = "var(--ink)") =>
     ({
-      minHeight: 48,
-      padding: "10px 12px",
-      borderRadius: 12,
-      border: `1.5px solid ${selected ? color : "var(--line-strong)"}`,
-      background: selected ? color : "var(--card)",
-      color: selected ? "var(--on-pine)" : "var(--ink)",
+      minHeight: 52,
+      padding: "12px 12px",
+      borderRadius: "var(--r-field)",
+      border: `1px solid ${selected ? color : "var(--line-2)"}`,
+      background: selected ? color : "var(--surface)",
+      color: selected ? "var(--on-accent)" : "var(--ink)",
       fontSize: 15,
       fontWeight: 600,
       opacity: disabled ? 0.35 : 1,
@@ -177,11 +180,11 @@ const S = {
     }) as const,
   input: {
     width: "100%",
-    minHeight: 48,
-    padding: "12px 14px",
-    borderRadius: 12,
-    border: "1.5px solid var(--line-strong)",
-    background: "var(--card)",
+    minHeight: 52,
+    padding: "14px 16px",
+    borderRadius: "var(--r-field)",
+    border: "1px solid var(--line-2)",
+    background: "var(--surface)",
     color: "var(--ink)",
     fontSize: 17,
   } as const,
@@ -189,15 +192,30 @@ const S = {
     ({
       width: "100%",
       minHeight: 56,
-      borderRadius: 14,
+      borderRadius: "var(--r-btn)",
       border: "none",
-      background: enabled ? "var(--pine)" : "var(--line-strong)",
-      color: enabled ? "var(--on-pine)" : "var(--ink-muted)",
+      background: enabled ? "var(--accent)" : "var(--surface-2)",
+      color: enabled ? "var(--on-accent)" : "var(--ink-2)",
+      boxShadow: enabled ? "var(--shadow-btn)" : "none",
       fontSize: 17,
       fontWeight: 700,
       cursor: enabled ? "pointer" : "default",
       transition: "background var(--dur) ease, color var(--dur) ease",
     }) as const,
+  /** Avatar chip — Airbnb's human touch: a circle carrying the person's initial. */
+  avatar: {
+    width: 26,
+    height: 26,
+    borderRadius: "var(--r-pill)",
+    background: "var(--accent-soft)",
+    color: "var(--accent-press)",  // AA on the tint (5.75:1); base accent is 4.20:1
+    fontSize: 13,
+    fontWeight: 800,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  } as const,
 };
 
 // ─── Small building blocks ────────────────────────────────────────────────────
@@ -207,13 +225,16 @@ const S = {
  * Orients "what is this" without adding taps — the minimal-auth completeness ceiling.
  */
 function BrandLockup(props: { subtitle: string }) {
+  // Left-anchored, not a centered hero lockup (AVOID LIST): the entry screens read
+  // as the top of a real app, not as a splash page.
   return (
-    <div style={{ textAlign: "center", padding: "44px 0 20px" }}>
-      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2.5, color: "var(--pine)", textTransform: "uppercase" }}>
+    <div style={{ padding: "0 0 28px" }}>
+      <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.4, color: "var(--accent)" }}>
         Constructor
       </div>
-      <div style={{ width: 28, height: 2, background: "var(--pine-soft)", borderRadius: 2, margin: "8px auto" }} />
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{props.subtitle}</div>
+      <div style={{ fontSize: 15, fontWeight: 500, color: "var(--ink-2)", marginTop: 4 }}>
+        {props.subtitle}
+      </div>
     </div>
   );
 }
@@ -259,7 +280,7 @@ function OptionGrid(props: {
             onClick={() =>
               props.onChange(selected && props.allowClear ? null : o.key)
             }
-            style={S.gridBtn(selected, o.disabled, o.color ?? "var(--pine)")}
+            style={S.gridBtn(selected, o.disabled, o.color ?? "var(--accent)")}
           >
             <div>{o.label}</div>
             {o.hint ? (
@@ -268,7 +289,7 @@ function OptionGrid(props: {
                   fontSize: 13,
                   fontWeight: 500,
                   marginTop: 2,
-                  color: selected ? "var(--line)" : "var(--ink-muted)",
+                  color: selected ? "var(--line)" : "var(--ink-2)",
                 }}
               >
                 {o.hint}
@@ -299,9 +320,9 @@ function NextActionField(props: {
               minHeight: 44,
               padding: "8px 14px",
               borderRadius: 22,
-              border: `1.5px solid ${props.value === s ? "var(--pine)" : "var(--line-strong)"}`,
-              background: props.value === s ? "var(--pine)" : "var(--card)",
-              color: props.value === s ? "var(--on-pine)" : "var(--ink)",
+              border: `1.5px solid ${props.value === s ? "var(--accent)" : "var(--line-2)"}`,
+              background: props.value === s ? "var(--accent)" : "var(--surface)",
+              color: props.value === s ? "var(--on-accent)" : "var(--ink)",
               fontSize: 15,
               fontWeight: 600,
               cursor: "pointer",
@@ -337,7 +358,7 @@ function Sheet(props: {
       style={{
         position: "fixed",
         inset: 0,
-        background: "var(--paper)",
+        background: "var(--bg)",
         overflowY: "auto",
         zIndex: 20,
       }}
@@ -351,7 +372,7 @@ function Sheet(props: {
             padding: "14px 0 18px",
             position: "sticky",
             top: 0,
-            background: "var(--paper)",
+            background: "var(--bg)",
             zIndex: 5,
           }}
         >
@@ -372,7 +393,7 @@ function Sheet(props: {
           >
             <ChevronLeft size={26} />
           </button>
-          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>{props.title}</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.4, margin: 0 }}>{props.title}</h1>
         </div>
         {props.children}
         {props.error ? (
@@ -399,7 +420,8 @@ function Sheet(props: {
           left: 0,
           right: 0,
           padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
-          background: "rgba(247,243,234,0.96)",
+          // fully opaque: at 96% the board/sheet text ghosted through the bar
+          background: "var(--bg)",
           borderTop: "1px solid var(--line)",
         }}
       >
@@ -476,21 +498,29 @@ function PinGate(props: { onSuccess: () => void }) {
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "var(--paper)", overflowY: "auto", zIndex: 50 }}
+      style={{ position: "fixed", inset: 0, background: "var(--bg)", overflowY: "auto", zIndex: 50 }}
     >
-      <div style={{ ...S.page, padding: "0 16px 40px" }}>
+      <div
+        style={{
+          ...S.page,
+          padding: "0 16px 40px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
         <BrandLockup subtitle="Πωλήσεις ακινήτων · πρόσβαση ομάδας" />
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "8px 0 8px", textAlign: "center" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5, margin: "0 0 8px" }}>
           Κωδικός ομάδας
         </h1>
-        <p style={{ textAlign: "center", color: "var(--ink-muted)", fontSize: 15, margin: "0 0 24px" }}>
+        <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.5, margin: "0 0 28px" }}>
           Βάλε το PIN της ομάδας για να συνεχίσεις. Η εφαρμογή δουλεύει μόνο στο Wi-Fi του γραφείου.
         </p>
         <input
           style={{
             ...S.input,
             minHeight: 56,
-            fontSize: 24,
+            fontSize: 26,
             fontWeight: 700,
             textAlign: "center",
             letterSpacing: 8,
@@ -514,7 +544,6 @@ function PinGate(props: { onSuccess: () => void }) {
               color: "var(--danger)",
               fontWeight: 600,
               fontSize: 15,
-              textAlign: "center",
             }}
           >
             {error}
@@ -546,9 +575,17 @@ function OperatorGate(props: {
 }) {
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "var(--paper)", overflowY: "auto", zIndex: 40 }}
+      style={{ position: "fixed", inset: 0, background: "var(--bg)", overflowY: "auto", zIndex: 40 }}
     >
-      <div style={{ ...S.page, padding: "0 16px 40px" }}>
+      <div
+        style={{
+          ...S.page,
+          padding: "0 16px 40px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
         {props.current !== null ? (
           <div style={{ padding: "14px 0 0" }}>
             <button
@@ -571,23 +608,38 @@ function OperatorGate(props: {
           </div>
         ) : null}
         <BrandLockup subtitle="Πωλήσεις ακινήτων" />
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "8px 0 8px", textAlign: "center" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5, margin: "0 0 8px" }}>
           Ποιος είσαι;
         </h1>
-        <p style={{ textAlign: "center", color: "var(--ink-muted)", fontSize: 15, margin: "0 0 24px" }}>
+        <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.5, margin: "0 0 28px" }}>
           Διάλεξε το όνομά σου για να καταχωρείς με το χέρι σου.
         </p>
         <div style={{ display: "grid", gap: 12 }}>
-          {OPERATORS.map((o) => (
-            <button
-              key={o}
-              type="button"
-              onClick={() => props.onPick(o)}
-              style={{ ...S.gridBtn(props.current === o), minHeight: 64, fontSize: 17 }}
-            >
-              {o}
-            </button>
-          ))}
+          {OPERATORS.map((o) => {
+            const selected = props.current === o;
+            return (
+              <button
+                key={o}
+                type="button"
+                onClick={() => props.onPick(o)}
+                style={{
+                  ...S.gridBtn(selected),
+                  minHeight: 64,
+                  fontSize: 17,
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "12px 16px",
+                  textAlign: "left",
+                }}
+              >
+                {/* the same avatar language the board uses for the action owner */}
+                <span style={{ ...S.avatar, width: 34, height: 34, fontSize: 15 }}>{o.slice(0, 1)}</span>
+                {o}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -764,7 +816,7 @@ function ViewingSheet(props: SheetProps) {
             onChange={(k) => setBuyerId(k as number | null)}
           />
         ) : (
-          <div style={{ fontSize: 15, color: "var(--ink-muted)" }}>
+          <div style={{ fontSize: 15, color: "var(--ink-2)" }}>
             Δεν υπάρχουν ενεργοί αγοραστές — καταχώρισε πρώτα ενδιαφερόμενο.
           </div>
         )}
@@ -793,12 +845,13 @@ function ViewingSheet(props: SheetProps) {
                 style={{
                   flex: 1,
                   minHeight: 56,
-                  borderRadius: 12,
-                  border: `1.5px solid ${selected ? TEMP_COLOR[t] : "var(--line-strong)"}`,
-                  background: selected ? TEMP_COLOR[t] : "var(--card)",
-                  color: selected ? "var(--on-pine)" : TEMP_COLOR[t],
-                  fontSize: 20,
+                  borderRadius: "var(--r-field)",
+                  border: `1px solid ${selected ? TEMP_COLOR[t] : "var(--line-2)"}`,
+                  background: selected ? TEMP_COLOR[t] : "var(--surface)",
+                  color: selected ? "var(--on-accent)" : TEMP_COLOR[t],
+                  fontSize: 22,
                   fontWeight: 800,
+                  fontVariantNumeric: "tabular-nums",
                   cursor: "pointer",
                 }}
               >
@@ -892,7 +945,7 @@ function OfferSheet(props: SheetProps) {
             onChange={(k) => setBuyerId(k as number | null)}
           />
         ) : (
-          <div style={{ fontSize: 15, color: "var(--ink-muted)" }}>
+          <div style={{ fontSize: 15, color: "var(--ink-2)" }}>
             Δεν υπάρχουν ενεργοί αγοραστές — καταχώρισε πρώτα ενδιαφερόμενο.
           </div>
         )}
@@ -925,14 +978,14 @@ function OfferSheet(props: SheetProps) {
       {preview !== null && effectiveUnit !== null ? (
         <div
           style={{
-            background: "var(--card-2)",
-            border: "1.5px solid var(--pine-soft)",
+            background: "var(--surface-2)",
+            border: "1.5px solid var(--accent-soft)",
             borderRadius: 12,
             padding: "12px 14px",
             marginBottom: 20,
           }}
         >
-          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--pine)" }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--accent)" }}>
             {formatPct(preview.pctBelow)} κάτω από τη ζητούμενη ({formatEuro(effectiveUnit.askingCurrent)})
           </div>
           <div style={{ fontSize: 17, fontWeight: 800, color: "var(--ink)", margin: "4px 0 10px" }}>
@@ -947,9 +1000,9 @@ function OfferSheet(props: SheetProps) {
               minHeight: 44,
               width: "100%",
               borderRadius: 10,
-              border: "1.5px solid var(--pine)",
-              background: "var(--card)",
-              color: "var(--pine)",
+              border: "1.5px solid var(--accent)",
+              background: "var(--surface)",
+              color: "var(--accent)",
               fontSize: 15,
               fontWeight: 700,
               cursor: "pointer",
@@ -971,47 +1024,58 @@ function OfferSheet(props: SheetProps) {
 
 // ─── Board (US-4) ─────────────────────────────────────────────────────────────
 
+/**
+ * Status as a SUBTLE badge (AVOID LIST: never a loud filled pill) — a clean
+ * hairline pill where only the dot and the label carry the temperature colour.
+ */
 function TemperatureBadge(props: { temperature: string }) {
-  const color = TEMP_COLOR[props.temperature] ?? "var(--ink-muted)";
+  const color = TEMP_COLOR[props.temperature] ?? "var(--ink-2)";
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: "4px 10px",
-        borderRadius: 14,
-        background: `${color}18`,
+        padding: "5px 11px",
+        borderRadius: "var(--r-pill)",
+        border: "1px solid var(--line-2)",
+        background: "var(--surface)",
         color,
         fontSize: 13,
         fontWeight: 700,
+        whiteSpace: "nowrap",
       }}
     >
       <span
-        style={{ width: 8, height: 8, borderRadius: 4, background: color, display: "inline-block" }}
+        style={{ width: 7, height: 7, borderRadius: "var(--r-pill)", background: color, display: "inline-block" }}
       />
       {temperatureLabel(props.temperature)}
     </span>
   );
 }
 
+/**
+ * Board card — the flagship surface. White, lifted by ONE soft shadow and no
+ * border (never both), 16px radius, generous interior padding. Money is plain
+ * bold ink set with authority; the owner gets an avatar chip.
+ */
 function BoardCard(props: { card: Card }) {
   const c = props.card;
   return (
     <div
       style={{
-        background: "var(--card)",
-        borderRadius: 16,
-        padding: 14,
-        marginBottom: 10,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+        background: "var(--surface)",
+        borderRadius: "var(--r-card)",
+        padding: "var(--pad-card)",
+        marginBottom: 12,
+        boxShadow: "var(--shadow-card)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontSize: 17, fontWeight: 800 }}>{c.pseudonym}</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+          <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.2 }}>{c.pseudonym}</span>
           {c.unitCode !== null ? (
-            <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-muted)" }}>{c.unitCode}</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-2)" }}>{c.unitCode}</span>
           ) : null}
         </div>
         <TemperatureBadge temperature={c.temperature} />
@@ -1019,46 +1083,60 @@ function BoardCard(props: { card: Card }) {
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "baseline",
           justifyContent: "space-between",
-          marginTop: 8,
+          gap: 10,
+          marginTop: 14,
         }}
       >
         <span
           style={{
             fontSize: 13,
-            fontWeight: 700,
-            color: "var(--ink)",
-            background: "var(--card-2)",
-            borderRadius: 10,
-            padding: "4px 10px",
+            fontWeight: 600,
+            color: "var(--ink-2)",
+            letterSpacing: 0.2,
           }}
         >
           {stageLabel(c.stage)}
         </span>
         {c.offerAmount !== null ? (
-          <span style={{ fontSize: 15, fontWeight: 800, color: "var(--honey-ink)", fontVariantNumeric: "tabular-nums" }}>
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              letterSpacing: -0.4,
+              color: "var(--money)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             {formatEuro(c.offerAmount)}
           </span>
         ) : null}
       </div>
       <div
         style={{
-          marginTop: 10,
-          background: "var(--card-2)",
-          border: "1px solid var(--line-strong)",
-          borderRadius: 12,
-          padding: "10px 12px",
+          marginTop: 12,
+          background: "var(--surface-2)",
+          borderRadius: "var(--r-field)",
+          padding: "12px 14px",
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--pine)", letterSpacing: 0.5 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: "var(--accent)",
+            letterSpacing: 0.8,
+          }}
+        >
           ΕΠΟΜΕΝΗ ΕΝΕΡΓΕΙΑ
         </div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", marginTop: 2 }}>
+        <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, color: "var(--ink)", marginTop: 6 }}>
           {c.nextAction}
         </div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--pine)", marginTop: 2 }}>
-          → {c.nextOwner}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+          <span style={S.avatar}>{c.nextOwner.slice(0, 1)}</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-2)" }}>{c.nextOwner}</span>
         </div>
       </div>
     </div>
@@ -1067,18 +1145,11 @@ function BoardCard(props: { card: Card }) {
 
 function CounterStat(props: { label: string; value: number }) {
   return (
-    <div
-      style={{
-        flex: 1,
-        background: "var(--card)",
-        borderRadius: 12,
-        padding: "10px 8px",
-        textAlign: "center",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-      }}
-    >
-      <div style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{props.value}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-muted)" }}>{props.label}</div>
+    <div style={{ flex: 1, padding: "2px 0" }}>
+      <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.6, fontVariantNumeric: "tabular-nums" }}>
+        {props.value}
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-2)", marginTop: 2 }}>{props.label}</div>
     </div>
   );
 }
@@ -1188,21 +1259,21 @@ function App() {
   if (loadError !== null) {
     return (
       <div style={{ ...S.page, padding: 24 }}>
-        <h1 style={{ fontSize: 20 }}>Κάτι πήγε στραβά</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 800 }}>Κάτι πήγε στραβά</h1>
         <p style={{ color: "var(--danger)", fontWeight: 600 }}>{loadError}</p>
       </div>
     );
   }
 
   if (projects === null) {
-    return <div style={{ ...S.page, padding: 24, color: "var(--ink-muted)" }}>Φόρτωση…</div>;
+    return <div style={{ ...S.page, padding: 24, color: "var(--ink-2)" }}>Φόρτωση…</div>;
   }
 
   if (projects.length === 0) {
     return (
       <div style={{ ...S.page, padding: 24 }}>
-        <h1 style={{ fontSize: 20 }}>Δεν υπάρχουν έργα</h1>
-        <p style={{ color: "var(--ink-muted)" }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800 }}>Δεν υπάρχουν έργα</h1>
+        <p style={{ color: "var(--ink-2)" }}>
           Φόρτωσε το αρχικό pipeline με <code>bun run seed</code> και ανανέωσε τη σελίδα.
         </p>
       </div>
@@ -1215,12 +1286,15 @@ function App() {
       : { projectId, operator, units, cards, onSaved, onClose: () => setView("board") };
 
   return (
-    <div style={{ ...S.page, padding: "0 16px 120px" }}>
+    // data-screen: a stable hook for scripts/design/capture.ts to know the board
+    // has rendered. Non-visual and design-independent — the harness used to wait
+    // on a header STRING, which silently coupled it to one design's wording.
+    <div data-screen="board" style={{ ...S.page, padding: "0 16px 120px" }}>
       {/* Header: current operator (switchable) + project selector + counters */}
       <div style={{ padding: "14px 0 4px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-muted)", letterSpacing: 0.4 }}>
-            CONSTRUCTOR · ΠΩΛΗΣΕΙΣ
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: "var(--accent)" }}>
+            Constructor
           </div>
           <button
             type="button"
@@ -1230,18 +1304,18 @@ function App() {
               minHeight: 44,
               display: "flex",
               alignItems: "center",
-              gap: 6,
-              padding: "6px 14px",
-              borderRadius: 22,
-              border: "1.5px solid var(--line-strong)",
-              background: "var(--card)",
+              gap: 8,
+              padding: "6px 14px 6px 6px",
+              borderRadius: "var(--r-pill)",
+              border: "1px solid var(--line)",
+              background: "var(--surface)",
               color: "var(--ink)",
               fontSize: 15,
-              fontWeight: 700,
+              fontWeight: 600,
               cursor: "pointer",
             }}
           >
-            <User size={16} /> {operator}
+            <span style={S.avatar}>{operator.slice(0, 1)}</span> {operator}
           </button>
         </div>
         <div
@@ -1262,14 +1336,14 @@ function App() {
                 onClick={() => setProjectId(p.id)}
                 style={{
                   minHeight: 44,
-                  padding: "8px 14px",
-                  borderRadius: 22,
+                  padding: "8px 16px",
+                  borderRadius: "var(--r-pill)",
                   whiteSpace: "nowrap",
-                  border: `1.5px solid ${selected ? "var(--pine)" : "var(--line-strong)"}`,
-                  background: selected ? "var(--pine)" : "var(--card)",
-                  color: selected ? "var(--on-pine)" : "var(--ink)",
+                  border: `1px solid ${selected ? "var(--ink)" : "var(--line-2)"}`,
+                  background: selected ? "var(--ink)" : "var(--surface)",
+                  color: selected ? "var(--on-accent)" : "var(--ink)",
                   fontSize: 15,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
@@ -1279,12 +1353,12 @@ function App() {
           })}
         </div>
         {project !== null ? (
-          <div style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 10 }}>
+          <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5, marginBottom: 14 }}>
             {project.builderName} · {project.area} · {project.microArea}
           </div>
         ) : null}
         {counters !== null ? (
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
             <CounterStat label="Ενεργές" value={counters.liveOpportunities} />
             <CounterStat label="Επισκέψεις" value={counters.viewings} />
             <CounterStat label="Προσφορές" value={counters.offers} />
@@ -1294,7 +1368,7 @@ function App() {
 
       {/* Board: cards in API order (needs-attention-first, server-decided) */}
       {cards.length === 0 ? (
-        <div style={{ textAlign: "center", color: "var(--ink-muted)", padding: "40px 20px" }}>
+        <div style={{ textAlign: "center", color: "var(--ink-2)", padding: "40px 20px" }}>
           Κανένας ενεργός ενδιαφερόμενος.
           <br />
           Πάτησε «Νέος» για την πρώτη καταχώριση.
@@ -1314,9 +1388,9 @@ function App() {
             right: 16,
             maxWidth: 488,
             margin: "0 auto",
-            background: "var(--honey)",
-            color: "#2a2320",
-            borderRadius: 12,
+            background: "var(--ink)",
+            color: "var(--bg)",
+            borderRadius: "var(--r-btn)",
             padding: "12px 14px",
             fontSize: 15,
             fontWeight: 600,
@@ -1339,7 +1413,8 @@ function App() {
           left: 0,
           right: 0,
           padding: "10px 16px calc(10px + env(safe-area-inset-bottom))",
-          background: "rgba(247,243,234,0.96)",
+          // fully opaque: at 96% the board/sheet text ghosted through the bar
+          background: "var(--bg)",
           borderTop: "1px solid var(--line)",
         }}
       >
@@ -1358,12 +1433,12 @@ function App() {
               style={{
                 flex: 1,
                 minHeight: 56,
-                borderRadius: 14,
-                border: "none",
-                background: "var(--pine)",
-                color: "var(--on-pine)",
+                borderRadius: "var(--r-btn)",
+                border: "1px solid var(--line-2)",
+                background: "var(--surface)",
+                color: "var(--ink)",
                 fontSize: 15,
-                fontWeight: 700,
+                fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

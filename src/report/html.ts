@@ -31,12 +31,14 @@ function escapeHtml(text: string): string {
 
 // ─── Inline markup (on already-escaped text) ─────────────────────────────────
 
-/** Escapes, applies **bold**, then paints € figures with the honey money signal. */
+/** Escapes, applies **bold**, then marks € figures so they set as tabular ink. */
 function inline(text: string): string {
   return escapeHtml(text)
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    // Honey signal on money (IMPACT-LOOP Round 2): wrap "238.000 €" etc. Runs on
-    // already-escaped text, and € never appears inside a tag, so markup is untouched.
+    // Money marker: wraps "238.000 €" etc. so € figures set bold, tabular and in
+    // near-ink — money reads as data because of its WEIGHT, never a gold colour
+    // (AVOID LIST). Runs on already-escaped text, and € never appears inside a
+    // tag, so markup is untouched.
     .replace(/(\d[\d.,]*\s*€)/g, '<span class="eur">$1</span>');
 }
 
@@ -152,28 +154,31 @@ export function markdownToHtml(markdown: string): string {
 
 // ─── Document shell ──────────────────────────────────────────────────────────
 
-// Inline, dependency-free CSS: system-ui fonts, phone-readable measure,
+// Inline, dependency-free CSS: system fonts, phone-readable measure,
 // print-friendly page breaks. No external resource of any kind — the document
 // travels as an email attachment.
-// «Πεύκο & Μέλι» tokens embedded (the report is a standalone emailed document —
-// no access to the app's index.html). Serif headings for gravitas (Literata-
-// evoking via a system serif; self-hosted Literata is a follow-up), pinned type
-// scale in px (13/15/17/20/24), tabular figures so € reads as data.
-const STYLE = `:root{--paper:#f7f3ea;--card:#fffdf8;--card-2:#f1ebdd;--ink:#2a2320;--ink-muted:#6f665b;--line-strong:#d7cbb3;--pine:#14555a;--honey-ink:#7a5a1e}
-body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.55;color:var(--ink);background:var(--paper);font-variant-numeric:tabular-nums}
-.eur{color:var(--honey-ink);font-weight:700}
-main{max-width:44em;margin:0 auto;padding:1.5em 1.25em 3em;background:var(--card)}
-h1{font-family:Georgia,"Times New Roman",serif;font-size:24px;line-height:1.3;margin:0 0 .75em;padding-bottom:.4em;border-bottom:3px solid var(--pine);color:var(--ink)}
-h2{font-family:Georgia,"Times New Roman",serif;font-size:20px;margin:1.8em 0 .6em;padding-bottom:.25em;border-bottom:1px solid var(--line-strong);color:var(--pine)}
-h3{font-size:17px;margin:1.4em 0 .5em;color:var(--ink)}
-p{margin:.5em 0}
-ul{margin:.5em 0;padding-left:1.4em}
-li{margin:.35em 0}
-em{color:var(--ink-muted)}
-table{border-collapse:collapse;width:100%;margin:.75em 0}
-th,td{border:1px solid var(--line-strong);padding:.45em .65em;text-align:left}
-th{background:var(--card-2)}
-@media print{body{background:#fff}main{max-width:none;padding:0}h2,h3{break-after:avoid}li,tr{break-inside:avoid}}`;
+//
+// VARIANT A — "Airbnb-warm", the same token set as src/web/index.html (the report
+// is a standalone emailed document with no access to it, so the values are
+// restated here and MUST be kept in step). Clean geometric sans throughout — NO
+// serif anywhere (AVOID LIST); money is bold tabular ink, never gold; headings
+// separate by whitespace and one hairline, not by heavy rules.
+// Pinned type scale in px (13/15/17/22/26). Article III: pure string, no ICU.
+const STYLE = `:root{--bg:#ffffff;--surface-2:#f4f4f4;--ink:#1c1c1c;--ink-2:#5e5e5e;--line:#ebebeb;--line-2:#dddddd;--accent:#0f7a6c}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;font-size:17px;line-height:1.6;color:var(--ink);background:var(--bg);font-variant-numeric:tabular-nums}
+.eur{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+main{max-width:44em;margin:0 auto;padding:2em 1.25em 3em;background:var(--bg)}
+h1{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.25;margin:0 0 1em;color:var(--ink)}
+h2{font-size:22px;font-weight:800;letter-spacing:-.4px;margin:2em 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line);color:var(--ink)}
+h3{font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin:1.6em 0 .5em;color:var(--accent)}
+p{margin:.6em 0}
+ul{margin:.6em 0;padding-left:1.3em}
+li{margin:.4em 0}
+em{color:var(--ink-2);font-style:normal}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:15px}
+th,td{border-bottom:1px solid var(--line);padding:.7em .5em;text-align:left}
+th{font-size:13px;font-weight:700;color:var(--ink-2);border-bottom:1px solid var(--line-2)}
+@media print{main{max-width:none;padding:0}h2,h3{break-after:avoid}li,tr{break-inside:avoid}}`;
 
 /** The document title: the first H1's text, else a fixed Greek fallback. */
 function titleOf(markdown: string): string {

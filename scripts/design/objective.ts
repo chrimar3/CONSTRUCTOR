@@ -60,14 +60,18 @@ function touchOkShare(f: AuditFrame): number {
 
 /** Score one frame's objective facts. */
 export function scoreFrame(f: AuditFrame, tapOk = true): ObjectiveScreen {
+  // "honey_correct" is RETARGETED for the design-variant rebuild. It used to mean
+  // "the gold money signal is present on money surfaces and within a 5% budget".
+  // Every variant retires that signal — the AVOID LIST forbids colouring money,
+  // which now sets as bold tabular ink — so the old reading could never be
+  // satisfied again and would have scored a permanent, meaningless zero.
+  // It now means the inverse and stays checkable: the gold signal is ABSENT.
+  // Presence checks USED colors (incl. text), so a gold € figure counts even
+  // though it paints almost no area. (Field name kept: it is read by the
+  // benchmark/impact-model machinery this rebuild deliberately does not churn.)
   const honey = honeyShare(f.paintedByColor);
-  // "honey_correct" = within the painted-pixel budget AND actually present on the
-  // money/save surfaces (board + sheets + reports). Presence checks USED colors
-  // (incl. text), so the AA-safe honey-ink on € figures counts even though it
-  // paints ~no area. Absent on PIN/operator is fine.
-  const needsHoney = /board|sheet|report|offer/.test(f.frame);
-  const honeyPresent = honey > 0 || f.usedColors.some(isHoneyToken);
-  const honey_correct = honey <= HONEY_MAX_SHARE && (!needsHoney || honeyPresent);
+  const goldPresent = honey > 0 || f.usedColors.some(isHoneyToken);
+  const honey_correct = !goldPresent && honey <= HONEY_MAX_SHARE;
   return {
     palette_on_target_share: paletteOnTargetShare(f.paintedByColor),
     contrast_pass_rate: contrastPassRate(f.textPairs),
