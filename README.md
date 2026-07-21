@@ -11,15 +11,18 @@ report with one command.
 
 [![Runtime: Bun](https://img.shields.io/badge/runtime-Bun-black?logo=bun)](https://bun.sh)
 [![Language: TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/tests-437%20passing-2f7d5b)](#quality--governance)
-[![Design system](https://img.shields.io/badge/design--loop-T2%20Branded%207.78%2F10-c89b3c)](#the-impact-loop--design-quality-as-a-rail)
-[![PII](https://img.shields.io/badge/PII-AES--256--GCM%20%C2%B7%20fail--secure-a4432f)](#the-invariants-that-matter-most)
+[![Tests](https://img.shields.io/badge/tests-450%20passing-2f7d5b)](#quality--governance)
+[![Design](https://img.shields.io/badge/design-Airbnb--warm%20%C2%B7%20gates%207%2F7-0f7a6c)](#the-impact-loop--design-quality-as-a-rail)
+[![PII](https://img.shields.io/badge/PII-AES--256--GCM%20%C2%B7%20fail--secure-b3392e)](#the-invariants-that-matter-most)
 
 </div>
 
 > The interface is Greek (its operators are a three-person Athens office); the codebase, docs and
-> commit history are English. Visual direction: **«Πεύκο & Μέλι»** — Aegean-pine, a single honey
-> accent for money, warm alabaster grounds.
+> commit history are English. Visual direction: **"Airbnb-warm"** — the warmth is the whitespace, not
+> a tint. A pure-white ground, one confident teal accent used only for meaning, money set as bold
+> tabular **ink** (never a colour), soft-shadow cards, avatar chips, and a self-hosted Greek webfont
+> (Commissioner). Chosen by eye from four distinct directions; the board also carries an activity
+> funnel in the report, an escalate-only recency marker, and a restrained motion layer.
 
 ---
 
@@ -41,7 +44,7 @@ without being slow.
 - **A design-quality control loop.** Design isn't reviewed by taste — it's **measured** by an honest
   benchmark that binds a blind AI judge panel to objective facts, then improved one highest-leverage
   lever at a time. See [the IMPACT-LOOP](#the-impact-loop--design-quality-as-a-rail).
-- **437 tests, mutation-verified.** Rule-pinning tests are proven to fail when the rule is broken — a
+- **450 tests, mutation-verified.** Rule-pinning tests are proven to fail when the rule is broken — a
   green suite that actually guards something.
 
 ---
@@ -64,8 +67,8 @@ flowchart LR
     UI --> SRV --> Q --> DB
     SRV --> D
     R --> Q
-    style D fill:#14555a,color:#ffffff
-    style R fill:#c89b3c,color:#2a2320
+    style D fill:#0f7a6c,color:#ffffff
+    style R fill:#1c1c1c,color:#ffffff
 ```
 
 **Data flow of a capture:** the web sheet posts once → the API validates and throws a Greek 400 on bad
@@ -92,8 +95,12 @@ Most projects review design by opinion. Constructor **measures** it, and the mea
   on an objective check, so a tier can't be faked either.
 
 The loop runs as a deterministic [dynamic workflow](.claude/workflows/impact-loop.js) (measure → rank →
-research → propose) and has taken the app from a generic baseline (**5.63**) to **T2 "Branded"
-(7.78 / 10)** across two elevation rounds. Method: [`IMPACT-LOOP.md`](IMPACT-LOOP.md).
+research → propose) and took an earlier design from a generic baseline (**5.63**) to **T2 "Branded"
+(7.78 / 10)**. Then it earned its keep by knowing its limits: that 7.78 design was still **vetoed by
+eye** as generic. The benchmark stayed on as a *hygiene* rail (contrast, targets, tabular numerals,
+type discipline), and taste went back to a human — the shipped **"Airbnb-warm"** direction was chosen
+from four genuinely distinct variants, and clears every mechanical gate (**7 / 7**). Method:
+[`IMPACT-LOOP.md`](IMPACT-LOOP.md).
 
 ---
 
@@ -115,7 +122,7 @@ research → propose) and has taken the app from a generic baseline (**5.63**) t
 bun install
 bun run db:init                       # idempotent — create/upgrade the SQLite schema
 bun run seed seed.example.json        # load a synthetic pipeline (pseudonyms only, no PII)
-bun test                              # the full suite (437 tests)
+bun test                              # the full suite (450 tests)
 bun run dev                           # API + web client at http://localhost:3000
 
 # one-command builder report (deterministic Greek HTML):
@@ -167,8 +174,8 @@ src/
   db/          queries.ts (owns all SQL) · identity.ts (encrypted PII) · schema.sql · seed.ts
   api/         server.ts — thin Bun.serve boundary, Greek validation errors, team-PIN gate
   report/      biweekly · monthly · brief · html · separation — deterministic, total over data
-  web/         App.tsx (board + capture sheets) · «Πεύκο & Μέλι» design tokens · PWA manifest
-tests/         437 tests — one per requirement, named for the Article/FR it pins
+  web/         App.tsx (board + capture sheets) · "Airbnb-warm" design tokens · self-hosted webfont · PWA manifest
+tests/         450 tests — one per requirement, named for the Article/FR it pins
 scripts/       verify-gates.sh · git-hooks/ · design/ (the IMPACT-LOOP tooling)
 .specify/      constitution + the spec-kit source of truth
 docs/          codebase knowledge, screenshots, the design-loop spec & plan
