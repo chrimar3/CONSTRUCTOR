@@ -27,7 +27,7 @@ import { biweeklyReport } from "./biweekly";
 import { monthlyReport } from "./monthly";
 import { renderBrief } from "./brief";
 import { separationReport } from "./separation";
-import { htmlDocument } from "./html";
+import { htmlDocument, stripFunnelFence } from "./html";
 
 // ─── Periods (FR-13 tiling lengths) ──────────────────────────────────────────
 
@@ -279,7 +279,7 @@ if (import.meta.main) {
     // --html wraps at the WRITE site: renderReport stays the Markdown/JSON
     // producer (its tests and the /insights path are untouched), and the HTML
     // conversion is a pure presentation step over the identical report bytes.
-    process.stdout.write(v.html === true ? htmlDocument(report) : report);
+    process.stdout.write(v.html === true ? htmlDocument(report) : stripFunnelFence(report));
   } catch (e) {
     console.error(`Σφάλμα αναφοράς: ${e instanceof Error ? e.message : String(e)}`);
     process.exitCode = 1;

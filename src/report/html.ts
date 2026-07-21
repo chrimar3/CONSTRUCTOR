@@ -114,6 +114,23 @@ function renderFunnel(rowLines: string[]): string {
   return `<div class="funnel">\n${bars}\n</div>`;
 }
 
+/**
+ * Removes the ```funnel fence markers, keeping the inner "- label: N" bullets —
+ * the plaintext (non-HTML) CLI path emits clean bullets, exactly as before the
+ * funnel was added, while htmlDocument() still renders the fenced bars. Reports
+ * use ``` only for funnel fences, but the in-funnel flag keeps it precise.
+ */
+export function stripFunnelFence(markdown: string): string {
+  const out: string[] = [];
+  let inFunnel = false;
+  for (const line of markdown.split("\n")) {
+    if (line.trim() === "```funnel") { inFunnel = true; continue; }
+    if (inFunnel && line.trim() === "```") { inFunnel = false; continue; }
+    out.push(line);
+  }
+  return out.join("\n");
+}
+
 /** Renders the report Markdown subset to an HTML body fragment. */
 export function markdownToHtml(markdown: string): string {
   const lines = markdown.split("\n");

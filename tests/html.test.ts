@@ -20,7 +20,7 @@ import { join } from "node:path";
 import { initDb } from "../src/db/init";
 import { seed, type SeedFile } from "../src/db/seed";
 import { biweeklyReport } from "../src/report/biweekly";
-import { htmlDocument, markdownToHtml } from "../src/report/html";
+import { htmlDocument, markdownToHtml, stripFunnelFence } from "../src/report/html";
 
 // ─── Renderer unit tests — one per emitted construct ─────────────────────────
 
@@ -117,6 +117,21 @@ describe("markdownToHtml — the report Markdown subset", () => {
     expect(html).toContain("Εκδήλωση ενδιαφέροντος");
     // the raw "- label: N" lines must NOT also leak out as <li> list items
     expect(html).not.toContain("<li>Εκδήλωση ενδιαφέροντος: 8</li>");
+  });
+});
+
+describe("stripFunnelFence — plaintext path keeps the bullets, drops the fence markers", () => {
+  test("removes ```funnel and its closing ``` but keeps the inner list", () => {
+    const md = "## Δραστηριότητα\n\n```funnel\n- Επίσκεψη: 4\n- Προσφορά: 0\n```\n\n**Σύσταση:** x";
+    const out = stripFunnelFence(md);
+    expect(out).not.toContain("```");
+    expect(out).toContain("- Επίσκεψη: 4");
+    expect(out).toContain("- Προσφορά: 0");
+    expect(out).toContain("**Σύσταση:** x");
+  });
+  test("a document with no fence is returned unchanged", () => {
+    const md = "## Α\n\n- Επίσκεψη: 1\n";
+    expect(stripFunnelFence(md)).toBe(md);
   });
 });
 
