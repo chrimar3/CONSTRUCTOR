@@ -500,64 +500,91 @@ function PinGate(props: { onSuccess: () => void }) {
     <div
       style={{ position: "fixed", inset: 0, background: "var(--bg)", overflowY: "auto", zIndex: 50 }}
     >
+      {/* Three deliberate zones — brand pinned top, form in the optical middle,
+          reassurance pinned bottom — so the tall viewport is composed, not a clump
+          floating in dead-centre. */}
       <div
         style={{
           ...S.page,
-          padding: "0 16px 40px",
+          minHeight: "100vh",
+          padding: "0 16px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
         }}
       >
-        <BrandLockup subtitle="Πωλήσεις ακινήτων · πρόσβαση ομάδας" />
-        <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5, margin: "0 0 8px" }}>
-          Κωδικός ομάδας
-        </h1>
-        <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.5, margin: "0 0 28px" }}>
-          Βάλε το PIN της ομάδας για να συνεχίσεις. Η εφαρμογή δουλεύει μόνο στο Wi-Fi του γραφείου.
-        </p>
-        <input
+        <div style={{ paddingTop: 56 }}>
+          <BrandLockup subtitle="Πωλήσεις ακινήτων · πρόσβαση ομάδας" />
+        </div>
+        <div
           style={{
-            ...S.input,
-            minHeight: 56,
-            fontSize: 26,
-            fontWeight: 700,
-            textAlign: "center",
-            letterSpacing: 8,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            paddingBottom: 24,
           }}
-          type="password"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={12}
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void submit();
-          }}
-          placeholder="••••"
-          aria-label="PIN ομάδας"
-        />
-        {error !== null ? (
-          <div
+        >
+          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5, margin: "0 0 8px" }}>
+            Κωδικός ομάδας
+          </h1>
+          <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.5, margin: "0 0 24px" }}>
+            Βάλε το PIN της ομάδας για να συνεχίσεις.
+          </p>
+          <input
             style={{
-              marginTop: 12,
-              color: "var(--danger)",
-              fontWeight: 600,
-              fontSize: 15,
+              ...S.input,
+              minHeight: 56,
+              fontSize: 26,
+              fontWeight: 700,
+              textAlign: "center",
+              letterSpacing: 8,
             }}
-          >
-            {error}
+            type="password"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={12}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void submit();
+            }}
+            placeholder="••••"
+            aria-label="PIN ομάδας"
+          />
+          {error !== null ? (
+            <div
+              style={{
+                marginTop: 12,
+                color: "var(--danger)",
+                fontWeight: 600,
+                fontSize: 15,
+              }}
+            >
+              {error}
+            </div>
+          ) : null}
+          <div style={{ marginTop: 16 }}>
+            <button
+              type="button"
+              disabled={!submittable}
+              onClick={submit}
+              style={S.submit(submittable)}
+            >
+              {busy ? "Έλεγχος…" : "Είσοδος"}
+            </button>
           </div>
-        ) : null}
-        <div style={{ marginTop: 20 }}>
-          <button
-            type="button"
-            disabled={!submittable}
-            onClick={submit}
-            style={S.submit(submittable)}
-          >
-            {busy ? "Έλεγχος…" : "Είσοδος"}
-          </button>
+        </div>
+        <div
+          style={{
+            borderTop: "1px solid var(--line)",
+            paddingTop: 16,
+            paddingBottom: "calc(20px + env(safe-area-inset-bottom))",
+            color: "var(--ink-2)",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          Η εφαρμογή δουλεύει μόνο στο Wi-Fi του γραφείου.
         </div>
       </div>
     </div>
@@ -577,17 +604,19 @@ function OperatorGate(props: {
     <div
       style={{ position: "fixed", inset: 0, background: "var(--bg)", overflowY: "auto", zIndex: 40 }}
     >
+      {/* Same three-zone composition as the PIN gate: back + brand pinned top,
+          the choices in the optical middle. */}
       <div
         style={{
           ...S.page,
-          padding: "0 16px 40px",
+          minHeight: "100vh",
+          padding: "0 16px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
         }}
       >
-        {props.current !== null ? (
-          <div style={{ padding: "14px 0 0" }}>
+        <div style={{ paddingTop: props.current !== null ? 8 : 56 }}>
+          {props.current !== null ? (
             <button
               type="button"
               onClick={props.onCancel}
@@ -595,6 +624,8 @@ function OperatorGate(props: {
               style={{
                 minWidth: 44,
                 minHeight: 44,
+                marginBottom: 8,
+                marginLeft: -10,
                 border: "none",
                 background: "transparent",
                 display: "flex",
@@ -605,17 +636,26 @@ function OperatorGate(props: {
             >
               <ChevronLeft size={26} />
             </button>
-          </div>
-        ) : null}
-        <BrandLockup subtitle="Πωλήσεις ακινήτων" />
-        <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5, margin: "0 0 8px" }}>
-          Ποιος είσαι;
-        </h1>
-        <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.5, margin: "0 0 28px" }}>
-          Διάλεξε το όνομά σου για να καταχωρείς με το χέρι σου.
-        </p>
-        <div style={{ display: "grid", gap: 12 }}>
-          {OPERATORS.map((o) => {
+          ) : null}
+          <BrandLockup subtitle="Πωλήσεις ακινήτων" />
+        </div>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            paddingBottom: 40,
+          }}
+        >
+          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5, margin: "0 0 8px" }}>
+            Ποιος είσαι;
+          </h1>
+          <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.5, margin: "0 0 24px" }}>
+            Διάλεξε το όνομά σου για να καταχωρείς με το χέρι σου.
+          </p>
+          <div style={{ display: "grid", gap: 12 }}>
+            {OPERATORS.map((o) => {
             const selected = props.current === o;
             return (
               <button
@@ -640,6 +680,7 @@ function OperatorGate(props: {
               </button>
             );
           })}
+          </div>
         </div>
       </div>
     </div>
@@ -1067,7 +1108,7 @@ function BoardCard(props: { card: Card }) {
         background: "var(--surface)",
         borderRadius: "var(--r-card)",
         padding: "var(--pad-card)",
-        marginBottom: 12,
+        marginBottom: 10,
         boxShadow: "var(--shadow-card)",
       }}
     >
@@ -1086,7 +1127,7 @@ function BoardCard(props: { card: Card }) {
           alignItems: "baseline",
           justifyContent: "space-between",
           gap: 10,
-          marginTop: 14,
+          marginTop: 10,
         }}
       >
         <span
@@ -1115,28 +1156,33 @@ function BoardCard(props: { card: Card }) {
       </div>
       <div
         style={{
-          marginTop: 12,
+          marginTop: 10,
           background: "var(--surface-2)",
           borderRadius: "var(--r-field)",
           padding: "12px 14px",
         }}
       >
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: "var(--accent)",
-            letterSpacing: 0.8,
-          }}
-        >
-          ΕΠΟΜΕΝΗ ΕΝΕΡΓΕΙΑ
+        {/* label + owner share one line: the owner is metadata about the action,
+            not a third stacked block — a card's worth of vertical air reclaimed
+            so a third opportunity reaches the fold. */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: "var(--accent)",
+              letterSpacing: 0.8,
+            }}
+          >
+            ΕΠΟΜΕΝΗ ΕΝΕΡΓΕΙΑ
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+            <span style={S.avatar}>{c.nextOwner.slice(0, 1)}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)" }}>{c.nextOwner}</span>
+          </span>
         </div>
-        <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, color: "var(--ink)", marginTop: 6 }}>
+        <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, color: "var(--ink)", marginTop: 8 }}>
           {c.nextAction}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-          <span style={S.avatar}>{c.nextOwner.slice(0, 1)}</span>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-2)" }}>{c.nextOwner}</span>
         </div>
       </div>
     </div>

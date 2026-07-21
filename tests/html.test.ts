@@ -121,8 +121,14 @@ describe("htmlDocument — self-contained Greek document shell", () => {
     expect(doc).toContain('<meta charset="utf-8">');
     expect(doc).toContain('<meta name="viewport" content="width=device-width, initial-scale=1">');
     expect(doc).toContain("<style>");
-    // Self-contained: travels as an email attachment — no external resources.
-    expect(doc).not.toMatch(/src=|href=|url\(|@import|https?:\/\//);
+    // Self-contained: travels as an email attachment — no EXTERNAL resource may
+    // be fetched. No element refs (src=/href=), no @import, no absolute URL.
+    expect(doc).not.toMatch(/src=|href=|@import|https?:\/\//);
+    // url() is permitted ONLY as a self-contained data: URI (the embedded webfont
+    // subset) — a route/relative ref would be an external fetch in an email.
+    for (const m of doc.matchAll(/url\(\s*([^)]*)/g)) {
+      expect(m[1]!.replace(/['"]/g, "").trim().startsWith("data:")).toBe(true);
+    }
   });
 
   test("title is the first H1 text", () => {

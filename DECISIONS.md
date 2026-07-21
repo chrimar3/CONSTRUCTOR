@@ -386,3 +386,55 @@ Copy the template, increment the ID, fill it in.
 - Alternatives considered: renaming the field to `gold_free` across objective/benchmark/impact-model (rejected: ripples through IMPACT-LOOP machinery the brief marks secondary and asks not to churn — four times over, once per branch); deleting the term (rejected: throws away a live regression guard for the single most-cited AVOID-LIST item); emptying `HONEY_HEXES` (rejected: leaves a permanently-0 gate that reads as passing while checking nothing — the exact "hardcoded status is a future lie" failure `CLAUDE.md` warns about).
 - Reversibility: easy — three lines in `objective.ts` and its two fixtures.
 - Article-safety: none touched; `scripts/design/*` is dev-only tooling, imported by no `src/` file.
+
+### ADR-0040 — Variant A self-hosts the Commissioner webfont (subset woff2, embedded as a data URI)
+- Date: 2026-07-21
+- Zone: YELLOW (ZONING Step 4 — a static asset + a genuine trade-off; visual only). NOT Step 2
+  RED: Step 2 forbids a runtime *dependency* that is an external service/SDK or makes a network
+  call. A committed `.woff2` embedded as a `data:` URI is neither — it ships zero npm packages
+  and makes zero network requests at runtime. The DESIGN-VARIANTS brief explicitly sanctions
+  self-hosting a webfont "as a committed `.woff2` … a static asset, not an npm dep", recorded in
+  an ADR — this is that record. Human-chosen: Christos picked variant A and asked for a real
+  webfont.
+- Context: variant A ran on the platform sans; a distinctive typeface is the single largest
+  remaining quality lever, and app/report cohere better sharing one face (a prior review flagged
+  the report using a different face from the app). The hard constraint is that the whole UI is
+  **Greek**, which rules out most fashionable geometric sans (Manrope, Plus Jakarta, Figtree are
+  Latin-only).
+- Decision: self-host **Commissioner** — a low-contrast humanist variable sans by Kostas
+  Bartsokas, a Greek type designer, with first-class monotonic-Greek coverage, OFL-licensed, and
+  already named in the original `index.html` font stack. Pipeline: fetch the upstream variable
+  TTF from `google/fonts`; pin the decorative/slant axes (`slnt/FLAR/VOLM`) to defaults keeping
+  only `wght` 100–900 via `fontTools.varLib.instancer`; subset to the glyphs the UI renders
+  (Basic Latin + Latin-1 + Greek + Greek Extended + the punctuation `· « » – — • … € ≥`) and
+  compress to woff2 → **40.5 KB, one file, all weights**. Committed at
+  `src/web/fonts/Commissioner-subset.woff2` with `OFL.txt` (licence, retained as required) and
+  `NOTES.md` (reproducible provenance + the exact subset command). Consumed by embedding a
+  `@font-face` **`data:` URI** in BOTH `src/web/index.html` (the app shell — served verbatim,
+  no CSP blocks it) and `src/report/html.ts` (the report must be a self-contained email
+  attachment). The committed file is the source of truth from which the two base64 blocks are
+  regenerated; it is not served over a route, so **no server/behaviour change was made** — the
+  runtime dependency set stays `{react, react-dom, lucide-react}`.
+- Test update: `tests/html.test.ts` forbade `url(` outright to keep the report self-contained.
+  That was over-broad — a `data:` URI *is* self-contained. The assertion now forbids external
+  refs (`src=`/`href=`/`@import`/absolute URLs) and permits `url()` **only** when it is a
+  `data:` URI. Mutation-verified: injecting `url(https://…)` into the report CSS still fails the
+  test. The real invariant (no network egress from an emailed report) is intact and now stated
+  precisely.
+- Alternatives considered: Inter (excellent Greek, but it is the "safe AI face" and B already
+  leans grotesque — A wants warmth); Manrope/Plus Jakarta/Figtree (rejected: no Greek — a
+  non-starter); serving the woff2 over a new `/fonts/*` route (rejected: a behaviour/server
+  change the "visual rebuild only" brief discourages, and it needs its own test; the report
+  would still need the data-URI form regardless, so embedding is one mechanism for both); the
+  full unsubset variable font (742 KB → rejected: 18× larger for glyphs never rendered);
+  keeping system fonts (rejected: forgoes the biggest quality lever and leaves app/report on
+  different faces).
+- Reversibility: easy — delete `src/web/fonts/`, remove the two `@font-face` blocks and the
+  `"Commissioner",` prefix from the two font stacks; the app and reports fall back to the same
+  platform sans they used before, byte-identically. No route, schema, query or runtime path
+  references the font.
+- Article-safety: I — targets/reach/capture flow untouched; the font only changes glyph shapes.
+  III — the report stays a pure string with no wall-clock/ICU/LLM; the embedded base64 is a
+  constant, so reports remain byte-identical on re-render (verified). IV — the font carries no
+  buyer data. VIII — zero new runtime dependencies; `fontTools` was used once at author time to
+  build the asset and is not in the project.
