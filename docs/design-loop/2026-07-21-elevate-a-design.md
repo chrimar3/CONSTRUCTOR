@@ -64,7 +64,10 @@ SVG.
 - **Article VI (no naked bad numbers):** a 0-count stage renders an **empty track** (width 0) and
   the existing zero-activity / recommendation line stays directly adjacent, so a bare zero can
   never stand alone. When all three are 0, the existing "Δεν καταγράφηκε δραστηριότητα" branch
-  still fires and the funnel is suppressed.
+  still fires; the funnel then renders three empty (width-0) tracks — safe and Article VI-paired,
+  verified by the existing all-zero report tests. (As-shipped note: the funnel is NOT suppressed
+  for an all-zero period; the empty-track rendering was kept because it is safe and the plain
+  sentence already states the period was empty. The whole-feature review confirmed this.)
 - The self-contained-document test (`tests/html.test.ts`) still holds: bars introduce no external
   resource.
 
