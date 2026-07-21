@@ -85,3 +85,32 @@ export function canSubmit(input: SheetSubmitInput): boolean {
       return input.buyerId !== null && parseAmount(input.amount) !== null;
   }
 }
+
+// ─── Board recency (design elevation ③) ───────────────────────────────────────
+// Escalate-only staleness: a HOT lead untouched > STALE_HOT_DAYS, or a WARM lead
+// untouched > STALE_WARM_DAYS, is overdue. Cold never flags (dormant by nature).
+// Pure function of (temperature, updatedAt, now) — `now` injected, so it is
+// deterministic and unit-testable without a wall clock.
+
+export const STALE_HOT_DAYS = 2;
+export const STALE_WARM_DAYS = 5;
+
+const MS_PER_DAY = 86_400_000;
+
+/** Whole calendar days between two ISO date-or-datetime strings (date part only). */
+function calendarDaysBetween(fromIso: string, toIso: string): number {
+  const day = (iso: string) => Math.floor(Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / MS_PER_DAY);
+  return day(toIso) - day(fromIso);
+}
+
+/** Overdue marker for a board card, or null when fresh / cold. */
+export function stalenessMarker(
+  temperature: string,
+  updatedAt: string,
+  now: Date,
+): { days: number } | null {
+  const days = calendarDaysBetween(updatedAt, now.toISOString());
+  if (temperature === "hot" && days > STALE_HOT_DAYS) return { days };
+  if (temperature === "warm" && days > STALE_WARM_DAYS) return { days };
+  return null;
+}

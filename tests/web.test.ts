@@ -25,6 +25,9 @@ import {
   counterPreview,
   formatPct,
   parseAmount,
+  STALE_HOT_DAYS,
+  STALE_WARM_DAYS,
+  stalenessMarker,
 } from "../src/web/helpers";
 
 const GREEK = /\p{Script=Greek}/u;
@@ -351,5 +354,35 @@ describe("FR-11: source/segment/budget option labels come from labels.ts", () =>
     expect(() => sourceChannelLabel("facebook")).toThrow(RangeError);
     expect(() => segmentLabel("vip")).toThrow(RangeError);
     expect(() => budgetBandLabel("1M+")).toThrow(RangeError);
+  });
+});
+
+describe("stalenessMarker — escalate-only board recency (hot >2d, warm >5d, cold never)", () => {
+  const at = (isoDay: string) => new Date(`${isoDay}T09:00:00Z`);
+  const NOW = at("2026-07-21");
+  const daysAgo = (n: number) => {
+    const d = new Date(NOW); d.setUTCDate(d.getUTCDate() - n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  test("thresholds are the ruled values", () => {
+    expect(STALE_HOT_DAYS).toBe(2);
+    expect(STALE_WARM_DAYS).toBe(5);
+  });
+  test("hot at exactly 2 days is fresh; at 3 days it flags", () => {
+    expect(daysAgo(2)).not.toBe(daysAgo(3)); // precondition: fixtures differ
+    expect(stalenessMarker("hot", daysAgo(2), NOW)).toBeNull();
+    expect(stalenessMarker("hot", daysAgo(3), NOW)).toEqual({ days: 3 });
+  });
+  test("warm at 5 days is fresh; at 6 days it flags", () => {
+    expect(stalenessMarker("warm", daysAgo(5), NOW)).toBeNull();
+    expect(stalenessMarker("warm", daysAgo(6), NOW)).toEqual({ days: 6 });
+  });
+  test("cold never flags, however old", () => {
+    expect(stalenessMarker("cold", daysAgo(100), NOW)).toBeNull();
+  });
+  test("day count is whole calendar days from the date part, ignoring time of day", () => {
+    // precondition: same calendar day, different clock time → 0 days, no flag
+    expect(stalenessMarker("hot", "2026-07-21T23:59:59Z", at("2026-07-21"))).toBeNull();
   });
 });
