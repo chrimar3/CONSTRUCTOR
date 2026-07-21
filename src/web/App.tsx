@@ -355,6 +355,7 @@ function Sheet(props: {
 }) {
   return (
     <div
+      className="sheet-in"
       style={{
         position: "fixed",
         inset: 0,
@@ -428,6 +429,7 @@ function Sheet(props: {
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <button
             type="button"
+            className="press"
             disabled={!props.canSubmit || props.busy}
             onClick={props.onSubmit}
             style={S.submit(props.canSubmit && !props.busy)}
@@ -566,6 +568,7 @@ function PinGate(props: { onSuccess: () => void }) {
           <div style={{ marginTop: 16 }}>
             <button
               type="button"
+              className="press"
               disabled={!submittable}
               onClick={submit}
               style={S.submit(submittable)}
@@ -661,6 +664,7 @@ function OperatorGate(props: {
               <button
                 key={o}
                 type="button"
+                className="press"
                 onClick={() => props.onPick(o)}
                 style={{
                   ...S.gridBtn(selected),
@@ -1104,6 +1108,7 @@ function BoardCard(props: { card: Card }) {
   const c = props.card;
   return (
     <div
+      className="press"
       style={{
         background: "var(--surface)",
         borderRadius: "var(--r-card)",
@@ -1427,6 +1432,7 @@ function App() {
       {toast !== null ? (
         <div
           onClick={() => setToast(null)}
+          className="toast-in"
           style={{
             position: "fixed",
             top: 12,
@@ -1475,6 +1481,7 @@ function App() {
             <button
               key={b.view}
               type="button"
+              className="press"
               onClick={() => setView(b.view)}
               style={{
                 flex: 1,

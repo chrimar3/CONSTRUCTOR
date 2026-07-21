@@ -97,6 +97,14 @@ describe("T012 web routes", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([]);
   });
+
+  test("shell carries the reduced-motion guard AND the motion classes it disables", async () => {
+    const html = await (await fetch(`${base}/`)).text();
+    expect(html).toContain("prefers-reduced-motion: reduce");
+    expect(html).toContain(".press:active");     // press feedback exists…
+    expect(html).toContain("@keyframes toast-in"); // …and the toast keyframe…
+    expect(html).toContain("@keyframes sheet-in"); // …and the sheet keyframe
+  });
 });
 
 // ─── 2. The TSX bundle builds clean (Bun.build in a test) ───────────────────
