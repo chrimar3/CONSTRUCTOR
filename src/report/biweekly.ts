@@ -120,9 +120,14 @@ export function biweeklyReport(db: Database, options: BiweeklyReportOptions): st
     lines.push("Δεν καταγράφηκε δραστηριότητα στην περίοδο αναφοράς.");
     lines.push("");
   }
+  // ```funnel wrapper: html.ts renders these exact "- label: N" lines as
+  // proportional bars. The lines stay byte-identical, so every report/cli/
+  // naked-numbers assertion that matches them still holds.
+  lines.push("```funnel");
   lines.push(`- ${eventTypeLabel("inquiry")}: ${totals.inquiries}`);
   lines.push(`- ${eventTypeLabel("viewing")}: ${totals.viewings}`);
   lines.push(`- ${eventTypeLabel("offer")}: ${totals.offers}`);
+  lines.push("```");
   if (totals.inquiries === 0 || totals.viewings === 0 || totals.offers === 0) {
     // Article VI: a zero total never stands alone — pair it with the
     // deterministic, data-derived recommendation for the period's signals.

@@ -190,9 +190,11 @@ export function monthlyReport(db: Database, options: MonthlyReportOptions): stri
     lines.push("Δεν καταγράφηκε δραστηριότητα στην περίοδο αναφοράς.");
     lines.push("");
   }
+  lines.push("```funnel");
   lines.push(`- ${eventTypeLabel("inquiry")}: ${totals.inquiries}`);
   lines.push(`- ${eventTypeLabel("viewing")}: ${totals.viewings}`);
   lines.push(`- ${eventTypeLabel("offer")}: ${totals.offers}`);
+  lines.push("```");
   if (totals.inquiries === 0 || totals.viewings === 0 || totals.offers === 0) {
     // Article VI: a zero total never stands alone in its block.
     lines.push("");
