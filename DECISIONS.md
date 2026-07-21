@@ -438,3 +438,12 @@ Copy the template, increment the ID, fill it in.
   constant, so reports remain byte-identical on re-render (verified). IV — the font carries no
   buyer data. VIII — zero new runtime dependencies; `fontTools` was used once at author time to
   build the asset and is not in the project.
+
+### ADR-0041 — Board surfaces escalate-only recency (hot >2d, warm >5d); cold never
+- Date: 2026-07-21
+- Zone: YELLOW (ZONING Step 4 — a small, human-authorised scope addition that shows data the board did not display before). Christos approved the design doc `docs/design-loop/2026-07-21-elevate-a-design.md`, which is the ruling; the thresholds below are the standing decision.
+- Context: `updated_at` is on every `PipelineCard` but was never shown, and `listPipeline` already orders `temperature, … updated_at ASC` — the stalest hot lead is already first. Surfacing recency makes the board a triage tool without changing the ordering it already computes.
+- Decision: a quiet marker (`⚠ N μέρες`) appears only when a HOT lead is untouched > 2 days or a WARM lead > 5 days; COLD never flags. Driven by the pure `stalenessMarker(temperature, updatedAt, now)` helper (`now` injected, unit-tested). Thresholds are named constants `STALE_HOT_DAYS`/`STALE_WARM_DAYS`.
+- Alternatives considered: relative time on every card (rejected: reads as a timestamp, adds a line to every card, costs the density win); both (rejected: pushes against density); flagging cold (rejected: cold is expected to be dormant — it would cry wolf).
+- Reversibility: easy — remove the marker span in `BoardCard` and the helper; nothing else depends on it. No schema, query, ordering or temperature-derivation change.
+- Article-safety: I — no new taps, glanceable, ≥44px unaffected. III — `new Date()` lives only in `src/web/App.tsx`; the clock ban covers `src/report`/`src/domain`, which are untouched, so reports stay byte-deterministic. IV/V — no PII, no micro_area change. VIII — no new dependency (`AlertTriangle` is from the existing `lucide-react`).

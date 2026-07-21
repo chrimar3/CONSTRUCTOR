@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Check, ChevronLeft, Euro, Eye, UserPlus } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, Euro, Eye, UserPlus } from "lucide-react";
 import { OPERATORS } from "../domain/operators";
 import {
   budgetBandLabel,
@@ -27,6 +27,7 @@ import {
   formatPct,
   parseAmount,
   pinSubmittable,
+  stalenessMarker,
 } from "./helpers";
 
 // ─── API result shapes (mirror src/db/queries.ts) ────────────────────────────
@@ -1104,8 +1105,9 @@ function TemperatureBadge(props: { temperature: string }) {
  * border (never both), 16px radius, generous interior padding. Money is plain
  * bold ink set with authority; the owner gets an avatar chip.
  */
-function BoardCard(props: { card: Card }) {
+function BoardCard(props: { card: Card; now: Date }) {
   const c = props.card;
+  const stale = stalenessMarker(c.temperature, c.updatedAt, props.now);
   return (
     <div
       className="press"
@@ -1124,7 +1126,24 @@ function BoardCard(props: { card: Card }) {
             <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-2)" }}>{c.unitCode}</span>
           ) : null}
         </div>
-        <TemperatureBadge temperature={c.temperature} />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {stale !== null ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                color: "var(--warm)",
+                fontSize: 13,
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <AlertTriangle size={13} /> {stale.days} μέρες
+            </span>
+          ) : null}
+          <TemperatureBadge temperature={c.temperature} />
+        </span>
       </div>
       <div
         style={{
@@ -1336,6 +1355,9 @@ function App() {
       ? null
       : { projectId, operator, units, cards, onSaved, onClose: () => setView("board") };
 
+  // one clock read per render; src/web is not on the Article III report path
+  const now = new Date();
+
   return (
     // data-screen: a stable hook for scripts/design/capture.ts to know the board
     // has rendered. Non-visual and design-independent — the harness used to wait
@@ -1425,7 +1447,7 @@ function App() {
           Πάτησε «Νέος» για την πρώτη καταχώριση.
         </div>
       ) : (
-        cards.map((c) => <BoardCard key={c.opportunityId} card={c} />)
+        cards.map((c) => <BoardCard key={c.opportunityId} card={c} now={now} />)
       )}
 
       {/* Toast — saved confirmation */}
