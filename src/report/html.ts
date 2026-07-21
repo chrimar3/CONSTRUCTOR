@@ -86,6 +86,34 @@ function splitCells(line: string): string[] {
 
 // ─── Block renderer ──────────────────────────────────────────────────────────
 
+/**
+ * Renders a ```funnel fence — a run of "- label: N" lines — as proportional
+ * CSS-div bars (widths relative to the largest count; 0 → empty track). Pure
+ * string, integer arithmetic only: Article III byte-determinism holds, and a
+ * zero count still shows its figure adjacent to the block's recommendation
+ * (Article VI). CSS divs (not SVG) so email/Viber clients render them.
+ */
+function renderFunnel(rowLines: string[]): string {
+  const rows = rowLines
+    .map((l) => /^- (.+): (\d+)$/.exec(l))
+    .filter((m): m is RegExpExecArray => m !== null)
+    .map((m) => ({ label: m[1]!, value: parseInt(m[2]!, 10) }));
+  const max = rows.reduce((m, r) => Math.max(m, r.value), 0);
+  const bars = rows
+    .map((r) => {
+      const pct = max === 0 ? 0 : Math.round((r.value * 100) / max);
+      return (
+        `<div class="funnel-row">` +
+        `<span class="funnel-label">${escapeHtml(r.label)}</span>` +
+        `<span class="funnel-track"><span class="funnel-bar" style="width:${pct}%"></span></span>` +
+        `<span class="funnel-val">${r.value}</span>` +
+        `</div>`
+      );
+    })
+    .join("\n");
+  return `<div class="funnel">\n${bars}\n</div>`;
+}
+
 /** Renders the report Markdown subset to an HTML body fragment. */
 export function markdownToHtml(markdown: string): string {
   const lines = markdown.split("\n");
@@ -107,6 +135,18 @@ export function markdownToHtml(markdown: string): string {
     // INSIGHTS paste markers stay machine-findable HTML comments.
     if (isCommentLine(line)) {
       out.push(line);
+      continue;
+    }
+
+    // Funnel fence: ```funnel … ``` wrapping "- label: N" lines → proportional bars.
+    if (line.trim() === "```funnel") {
+      const rowLines: string[] = [];
+      i++;
+      while (i < lines.length && lines[i]!.trim() !== "```") {
+        rowLines.push(lines[i]!);
+        i++;
+      }
+      out.push(renderFunnel(rowLines));
       continue;
     }
 
@@ -179,7 +219,13 @@ em{color:var(--ink-2);font-style:normal}
 table{border-collapse:collapse;width:100%;margin:1em 0;font-size:15px}
 th,td{border-bottom:1px solid var(--line);padding:.7em .5em;text-align:left}
 th{font-size:13px;font-weight:700;color:var(--ink-2);border-bottom:1px solid var(--line-2)}
-@media print{main{max-width:none;padding:0}h2,h3{break-after:avoid}li,tr{break-inside:avoid}}`;
+@media print{main{max-width:none;padding:0}h2,h3{break-after:avoid}li,tr{break-inside:avoid}}
+.funnel{margin:.4em 0 1.2em}
+.funnel-row{display:flex;align-items:center;gap:.7em;margin:.35em 0}
+.funnel-label{flex:0 0 9em;font-size:13px;color:var(--ink-2)}
+.funnel-track{flex:1;height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.funnel-bar{display:block;height:100%;background:var(--ink-2);border-radius:6px}
+.funnel-val{flex:0 0 auto;min-width:1.6em;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}`;
 
 /** The document title: the first H1's text, else a fixed Greek fallback. */
 function titleOf(markdown: string): string {

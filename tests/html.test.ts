@@ -105,6 +105,19 @@ describe("markdownToHtml — the report Markdown subset", () => {
     const html = markdownToHtml("**Σύσταση:** τιμή < 200 & έλεγχος");
     expect(html).toContain("<strong>Σύσταση:</strong> τιμή &lt; 200 &amp; έλεγχος");
   });
+
+  test("funnel fence renders proportional bars; zero → width 0; values preserved", () => {
+    const md = "```funnel\n- Εκδήλωση ενδιαφέροντος: 8\n- Επίσκεψη: 4\n- Προσφορά: 0\n```";
+    const html = markdownToHtml(md);
+    expect(html).toContain('<div class="funnel">');
+    expect(html).toContain('style="width:100%"'); // 8 is the max → full
+    expect(html).toContain('style="width:50%"');  // 4 / 8
+    expect(html).toContain('style="width:0%"');   // 0 → empty track (Article VI safe)
+    expect(html).toContain('<span class="funnel-val">0</span>');
+    expect(html).toContain("Εκδήλωση ενδιαφέροντος");
+    // the raw "- label: N" lines must NOT also leak out as <li> list items
+    expect(html).not.toContain("<li>Εκδήλωση ενδιαφέροντος: 8</li>");
+  });
 });
 
 // ─── Document shell ───────────────────────────────────────────────────────────
